@@ -13,7 +13,7 @@ This repository contains a minimal web application built using the Yesod web fra
 ## Getting Started
 1. clone the repo
    ```
-   git clone https://github.com/your-username/yesod-hello-world.git
+   git clone https://github.com/seheonm/PianoMusicGenerator.git
    cd PianoMusicGeneratorWebApp
    ```
 2. Build and setup the project
