@@ -6,4 +6,8 @@ import Foundation
 import Yesod.Core
 
 getHomeR :: Handler Html
-getHomeR = defaultLayout [whamlet|Hello, World!|]
+getHomeR = defaultLayout [whamlet|
+    <h1>Hello, Marina!</h1>
+    <p>Click the button below:</p>
+    <button>Click me!</button>
+|]
