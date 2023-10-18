@@ -1,2 +1,3 @@
+/static StaticR Static getStatic
 /              HomeR GET
 /add/#Int/#Int AddR  GET

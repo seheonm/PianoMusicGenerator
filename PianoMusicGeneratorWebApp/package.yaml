@@ -4,6 +4,7 @@ version: "0.0.0"
 dependencies:
 - base
 - yesod-core
+- yesod-static
 
 # The library contains all of our application code. The executable
 # defined below is just a thin wrapper.
