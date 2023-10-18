@@ -7,7 +7,7 @@ import Yesod.Core
 
 getHomeR :: Handler Html
 getHomeR = defaultLayout [whamlet|
-Hello, Worlds!
+Hello, Worldss!
 <audio id="myAudio">
     <source src=@{StaticR _Recording_m4a} type="audio/x-m4a">
 <button onclick="playAudio()">Play Sound</button>
