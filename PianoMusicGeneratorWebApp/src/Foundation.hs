@@ -5,9 +5,14 @@
 module Foundation where
 
 import Yesod.Core
+import Yesod.Static
 
 data App = App
+    { getStatic :: Static
+    }
+
+$(staticFiles "static")
 
 mkYesodData "App" $(parseRoutesFile "routes.yesodroutes")
 
-instance Yesod App
+instance Yesod App where
