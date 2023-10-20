@@ -4,6 +4,7 @@ module Home where
 
 import Foundation
 import Yesod.Core
+import Euterpea
 
 getHomeR :: Handler Html
 getHomeR = defaultLayout [whamlet|Hello, welcome to our Piano Music Generator!
