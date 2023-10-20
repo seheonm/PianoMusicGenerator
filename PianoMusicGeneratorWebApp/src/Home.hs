@@ -8,6 +8,7 @@ import Euterpea
 
 getHomeR :: Handler Html
 getHomeR = defaultLayout [whamlet|Hello, welcome to our Piano Music Generator!
+
 <audio id="myAudio">
     <source src=@{StaticR _Recording_m4a} type="audio/x-m4a">
 <button onclick="playAudio()">Play Sound</button>
@@ -17,4 +18,5 @@ getHomeR = defaultLayout [whamlet|Hello, welcome to our Piano Music Generator!
         x.play();
     }
 <img src=@{StaticR _IMG_1960_jpg}>
+
 |]
