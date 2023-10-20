@@ -3,7 +3,21 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages: []
+packages:
+- completed:
+    hackage: Euterpea-2.0.7@sha256:a885d2f3e82680284a85822d1f1b0e39ae44afbd50e61bf92e38ddbc7694b3b9,2683
+    pantry-tree:
+      sha256: d4f6ff20ae6767c97dbc13d6b1ed7ec2ba946a509541da8f39b8a1e5a7f42511
+      size: 1603
+  original:
+    hackage: Euterpea-2.0.7
+- completed:
+    hackage: PortMidi-0.2.0.0@sha256:0671e36ec72e95138bf396234b205864a8a6d0ee353e09e01cbfd57004c56f40,2383
+    pantry-tree:
+      sha256: c9936666afc390560319024c25ecb184e2518ae4d3be5ae14081231091c1f073
+      size: 1818
+  original:
+    hackage: PortMidi-0.2.0.0@sha256:0671e36ec72e95138bf396234b205864a8a6d0ee353e09e01cbfd57004c56f40,2383
 snapshots:
 - completed:
     sha256: 1d663bec402f77fa09fa3e8cf288c3c7eb18a1f28a5e0c331ac47adeacd21346
