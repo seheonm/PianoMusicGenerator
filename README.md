@@ -4,7 +4,7 @@ This repository contains a minimal web application built using the Yesod web fra
 ## Members:
 - Marina Seheon
 - Jack Vanlyssel
-- Joseph Barrela
+- Joseph Barela
 
 ## Prerequisites
 - Haskell Stack
