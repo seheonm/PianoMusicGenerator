@@ -8,6 +8,7 @@ dependencies:
 - base >= 4.7 && < 5
 - Euterpea
 - yesod
+- text
 
 # The library contains all of our application code. The executable
 # defined below is just a thin wrapper.
@@ -25,3 +26,6 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - PianoMusicGeneratorWebApp
+    - base >= 4.7 && < 5
+    - yesod
+    - text
