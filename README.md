@@ -34,7 +34,8 @@ This repository contains a minimal web application built using the Yesod web fra
 ## Modifying the Application
 To modify the main handler, check out src/Handler/Home.hs. This is where the response for the root path (/) is defined.
 
-for library
+## Euterpea Library 
+
 - install Euterpea at https://www.euterpea.com/
 - follow the install instructions on the website
 - in vscode, type stack install Euterpea
