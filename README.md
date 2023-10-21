@@ -36,8 +36,20 @@ To modify the main handler, check out src/Handler/Home.hs. This is where the res
 
 ## Euterpea Library 
 
-- install Euterpea at https://www.euterpea.com/
-- follow the install instructions on the website
-- in vscode, type stack install Euterpea
-- then stack clean, stack build, stack run 
-- hopefully it worked :) 
+- Install Euterpea from https://www.euterpea.com/ and follow the instructions
+- In vscode, type 
+   ```
+   stack install Euterpea
+   ```
+- Build the project again
+   ```
+   stack clean
+   stack build
+   ```
+- Run app
+   ```
+   stack run
+   ```
+
+   ## Website 
+   Enjoy playing on the piano and generating music!
