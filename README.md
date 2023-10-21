@@ -51,5 +51,5 @@ To modify the main handler, check out src/Handler/Home.hs. This is where the res
    stack run
    ```
 
-   ## Website 
-   Enjoy playing on the piano and generating music!
+## Website 
+Enjoy playing on the piano and generating music!
