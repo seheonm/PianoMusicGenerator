@@ -55,6 +55,34 @@ getHomeR = defaultLayout $ do
             <button .white-key onclick="playNote('A5')">
             <button .black-key onclick="playNote('As5')">
             <button .white-key onclick="playNote('B5')">
+        <div .music-settings>
+            <form>
+                <label for="timeSignature">Time Signature:
+                <select id="timeSignature" name="timeSignature">
+                    <option value="4/4">4/4
+                    <option value="3/4">3/4
+                    <option value="2/4">2/4
+                    <option value="6/8">6/8
+                <label for="bpm">BPM:
+                <input type="number" id="bpm" name="bpm" value="120">
+                <label for="keySignature">Key Signature:
+                <select id="keySignature" name="keySignature">
+                    <option value="C">C
+                    <option value="G">G
+                    <option value="D">D
+                    <option value="A">A
+                    <option value="E">E
+                    <option value="B">B
+                    <option value="F#">F#
+                    <option value="C#">C#
+                    <option value="F">F
+                    <option value="Bb">Bb
+                    <option value="Eb">Eb
+                    <option value="Ab">Ab
+                    <option value="Db">Db
+                    <option value="Gb">Gb
+                    <option value="Cb">Cb
+                <button type="submit">Apply
         <script>
             function playNote(note) {
                 fetch(`/playNote/${note}`);

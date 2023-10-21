@@ -1,13 +1,14 @@
 .greeting {
     font-size: 30px; 
     margin-bottom: 40px; 
+    text-align: center;
 }
 
 .piano {
     display: flex;
     align-items: flex-start;
-    position: relative;
     justify-content: center;
+    margin-bottom: 40px;
 }
 
 .white-key, .black-key {
@@ -35,3 +36,26 @@
     margin: 0 -20px;
     z-index: 1;
 }
+
+.music-settings {
+    text-align: center;
+    margin-top: 200px;
+}
+
+.music-settings label {
+    margin-right: 10px;
+    font-size: 16px;
+}
+
+.music-settings select, .music-settings input {
+    margin-right: 20px;
+    padding: 5px;
+    font-size: 16px;
+}
+
+.music-settings button {
+    padding: 5px 15px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
