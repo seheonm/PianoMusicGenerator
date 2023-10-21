@@ -15,6 +15,7 @@ getPlayNoteR p = liftIO (playNote p) >> return [shamlet|Note played|]
 getHomeR = defaultLayout $ do 
     addStylesheet $ StaticR styles_css
     [whamlet|
+        By: Marina Seheon, Jack Vanlyssel, and Joesph Barrela
         <div class="greeting">
             Hello, welcome to our Piano Music Generator!
         <div .piano>
