@@ -6,6 +6,9 @@ This repository contains a minimal web application built using the Yesod web fra
 - Jack Vanlyssel
 - Joseph Barela
 
+## Website 
+Enjoy playing on the piano and generating music!
+
 ## Prerequisites
 - Haskell Stack
 - GHC (Glasgow Haskell Compiler) - Installed automatically by Stack if not already present.
@@ -50,6 +53,3 @@ To modify the main handler, check out src/Handler/Home.hs. This is where the res
    ```
    stack run
    ```
-
-## Website 
-Enjoy playing on the piano and generating music!
