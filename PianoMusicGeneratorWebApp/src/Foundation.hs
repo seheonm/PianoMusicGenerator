@@ -17,6 +17,7 @@ data App = App
     { getStatic :: Static
     }
 
+
 $(staticFiles "static")
 
 mkYesodData "App" $(parseRoutesFile "routes.yesodroutes")

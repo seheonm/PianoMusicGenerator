@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes       #-}
 module Home where
-
+    
+import Data.Char (isLetter)
 import Foundation
 import Yesod.Core
 import Euterpea
@@ -9,8 +10,41 @@ import Euterpea
 playNote :: Pitch -> IO ()
 playNote p = play $ note qn p
 
-getPlayNoteR :: Pitch -> Handler Html
-getPlayNoteR p = liftIO (playNote p) >> return [shamlet|Note played|]
+getPlayNoteR :: String -> Handler Html
+getPlayNoteR noteStr = do
+    liftIO $ putStrLn $ "Received note: " ++ noteStr  -- Log the received note
+    case parsePitch noteStr of
+        Just pitch -> do
+            liftIO $ putStrLn $ "Parsed pitch: " ++ show pitch  -- Log the parsed pitch
+            -- Successfully parsed a Pitch, so play the note
+            liftIO $ playNote pitch
+            return [shamlet|Note played|]
+        Nothing -> do
+            liftIO $ putStrLn $ "Failed to parse pitch: " ++ noteStr  -- Log the failure
+            -- Failed to parse a Pitch, so return an error
+            return [shamlet|Invalid note: #{noteStr}|]
+
+parsePitch :: String -> Maybe Pitch
+parsePitch s = case span isLetter s of
+    ("C", 's':rest) -> Just (Cs, read rest)
+    ("D", 's':rest) -> Just (Ds, read rest)
+    ("E", 's':rest) -> Just (Es, read rest)
+    ("F", 's':rest) -> Just (Fs, read rest)
+    ("G", 's':rest) -> Just (Gs, read rest)
+    ("A", 's':rest) -> Just (As, read rest)
+    ("B", 's':rest) -> Just (Bs, read rest)
+    ("C", rest) -> Just (C, read rest)
+    ("D", rest) -> Just (D, read rest)
+    ("E", rest) -> Just (E, read rest)
+    ("F", rest) -> Just (F, read rest)
+    ("G", rest) -> Just (G, read rest)
+    ("A", rest) -> Just (A, read rest)
+    ("B", rest) -> Just (B, read rest)
+    _ -> Nothing
+
+
+
+
 
 getHomeR = defaultLayout $ do 
     addStylesheet $ StaticR styles_css
@@ -84,7 +118,10 @@ getHomeR = defaultLayout $ do
                     <option value="Cb">Cb
                 <button type="submit">Apply
         <script>
-            function playNote(note) {
-                fetch(`/playNote/${note}`);
-            }
+            document.addEventListener("DOMContentLoaded", function() {
+                window.playNote = function(note) {
+                    fetch(`/getPlayNoteR/${note}`);
+                }
+            });
+
     |]
