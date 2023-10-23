@@ -12,11 +12,9 @@ import Yesod.Core (PathPiece(..))
 import qualified Data.Text.Read as TR
 import Data.Text (pack, unpack)
 
-
 data App = App
     { getStatic :: Static
     }
-
 
 $(staticFiles "static")
 

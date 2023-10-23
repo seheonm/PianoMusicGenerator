@@ -26,32 +26,28 @@ getPlayNoteR noteStr = do
 
 parsePitch :: String -> Maybe Pitch
 parsePitch s = case span isLetter s of
-    ("C", 's':rest) -> Just (Cs, read rest)
-    ("D", 's':rest) -> Just (Ds, read rest)
-    ("E", 's':rest) -> Just (Es, read rest)
-    ("F", 's':rest) -> Just (Fs, read rest)
-    ("G", 's':rest) -> Just (Gs, read rest)
-    ("A", 's':rest) -> Just (As, read rest)
-    ("B", 's':rest) -> Just (Bs, read rest)
     ("C", rest) -> Just (C, read rest)
+    ("Cs", rest) -> Just (Cs, read rest)
     ("D", rest) -> Just (D, read rest)
+    ("Ds", rest) -> Just (Ds, read rest)
     ("E", rest) -> Just (E, read rest)
     ("F", rest) -> Just (F, read rest)
+    ("Fs", rest) -> Just (Fs, read rest)
     ("G", rest) -> Just (G, read rest)
+    ("Gs", rest) -> Just (Gs, read rest)
     ("A", rest) -> Just (A, read rest)
+    ("As", rest) -> Just (As, read rest)
     ("B", rest) -> Just (B, read rest)
     _ -> Nothing
-
-
-
-
 
 getHomeR = defaultLayout $ do 
     addStylesheet $ StaticR styles_css
     [whamlet|
         By: Marina Seheon, Jack Vanlyssel, and Joesph Barrela
+        
         <div class="greeting">
             Hello, welcome to our Piano Music Generator!
+
         <div .piano>
             <button .white-key onclick="playNote('C3')">
             <button .black-key onclick="playNote('Cs3')">
@@ -89,6 +85,7 @@ getHomeR = defaultLayout $ do
             <button .white-key onclick="playNote('A5')">
             <button .black-key onclick="playNote('As5')">
             <button .white-key onclick="playNote('B5')">
+
         <div .music-settings>
             <form>
                 <label for="timeSignature">Time Signature:
@@ -117,11 +114,11 @@ getHomeR = defaultLayout $ do
                     <option value="Gb">Gb
                     <option value="Cb">Cb
                 <button type="submit">Apply
+        
         <script>
             document.addEventListener("DOMContentLoaded", function() {
                 window.playNote = function(note) {
                     fetch(`/getPlayNoteR/${note}`);
                 }
             });
-
     |]
