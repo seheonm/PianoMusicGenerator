@@ -26,21 +26,34 @@ getPlayNoteR noteStr = do
 
 parsePitch :: String -> Maybe Pitch
 parsePitch s = case span isLetter s of
-    ("C", 's':rest) -> Just (Cs, read rest)
-    ("D", 's':rest) -> Just (Ds, read rest)
-    ("E", 's':rest) -> Just (Es, read rest)
-    ("F", 's':rest) -> Just (Fs, read rest)
-    ("G", 's':rest) -> Just (Gs, read rest)
-    ("A", 's':rest) -> Just (As, read rest)
-    ("B", 's':rest) -> Just (Bs, read rest)
-    ("C", rest) -> Just (C, read rest)
-    ("D", rest) -> Just (D, read rest)
-    ("E", rest) -> Just (E, read rest)
-    ("F", rest) -> Just (F, read rest)
-    ("G", rest) -> Just (G, read rest)
-    ("A", rest) -> Just (A, read rest)
-    ("B", rest) -> Just (B, read rest)
-    _ -> Nothing
+    ("C", 's':rest)  -> Just (Cs, readOctave rest)
+    ("D", 's':rest)  -> Just (Ds, readOctave rest)
+    ("E", 's':rest)  -> Just (Es, readOctave rest)
+    ("F", 's':rest)  -> Just (Fs, readOctave rest)
+    ("G", 's':rest)  -> Just (Gs, readOctave rest)
+    ("A", 's':rest)  -> Just (As, readOctave rest)
+    ("B", 's':rest)  -> Just (Bs, readOctave rest)
+    ("C", rest)      -> Just (C, readOctave rest)
+    ("D", rest)      -> Just (D, readOctave rest)
+    ("E", rest)      -> Just (E, readOctave rest)
+    ("F", rest)      -> Just (F, readOctave rest)
+    ("G", rest)      -> Just (G, readOctave rest)
+    ("A", rest)      -> Just (A, readOctave rest)
+    ("B", rest)      -> Just (B, readOctave rest)
+    ("Gs", rest)     -> Just (Gs, readOctave rest)
+    ("Fs", rest)     -> Just (Fs, readOctave rest)
+    ("Ds", rest)     -> Just (Ds, readOctave rest)
+    ("As", rest)     -> Just (As, readOctave rest)
+    ("Cs", rest)     -> Just (Cs, readOctave rest)
+    ("Bs", rest)     -> Just (Bs, readOctave rest)
+    _                -> Nothing
+
+  where
+    readOctave str = 
+      case reads str :: [(Int, String)] of
+        [(val, "")] -> val
+        _           -> error $ "Invalid octave: " ++ str
+
 
 
 
@@ -49,7 +62,7 @@ parsePitch s = case span isLetter s of
 getHomeR = defaultLayout $ do 
     addStylesheet $ StaticR styles_css
     [whamlet|
-        By: Marina Seheon, Jack Vanlyssel, and Joesph Barrela
+        By: Marina Seheon, Jack Vanlyssel, and Joesph Barela
         <div class="greeting">
             Hello, welcome to our Piano Music Generator!
         <div .piano>
