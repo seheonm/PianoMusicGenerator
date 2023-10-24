@@ -26,6 +26,7 @@ getPlayNoteR noteStr = do
 
 parsePitch :: String -> Maybe Pitch
 parsePitch s = case span isLetter s of
+
     ("C", 's':rest)  -> Just (Cs, readOctave rest)
     ("D", 's':rest)  -> Just (Ds, readOctave rest)
     ("E", 's':rest)  -> Just (Es, readOctave rest)
@@ -55,16 +56,14 @@ parsePitch s = case span isLetter s of
         _           -> error $ "Invalid octave: " ++ str
 
 
-
-
-
-
 getHomeR = defaultLayout $ do 
     addStylesheet $ StaticR styles_css
     [whamlet|
         By: Marina Seheon, Jack Vanlyssel, and Joesph Barela
+
         <div class="greeting">
             Hello, welcome to our Piano Music Generator!
+
         <div .piano>
             <button .white-key onclick="playNote('C3')">
             <button .black-key onclick="playNote('Cs3')">
@@ -102,6 +101,7 @@ getHomeR = defaultLayout $ do
             <button .white-key onclick="playNote('A5')">
             <button .black-key onclick="playNote('As5')">
             <button .white-key onclick="playNote('B5')">
+
         <div .music-settings>
             <form>
                 <label for="timeSignature">Time Signature:
@@ -130,11 +130,11 @@ getHomeR = defaultLayout $ do
                     <option value="Gb">Gb
                     <option value="Cb">Cb
                 <button type="submit">Apply
+        
         <script>
             document.addEventListener("DOMContentLoaded", function() {
                 window.playNote = function(note) {
                     fetch(`/getPlayNoteR/${note}`);
                 }
             });
-
     |]
