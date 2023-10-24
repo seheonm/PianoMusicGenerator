@@ -16,37 +16,28 @@ getPlayNoteR noteStr = do
     case parsePitch noteStr of
         Just pitch -> do
             liftIO $ putStrLn $ "Parsed pitch: " ++ show pitch  -- Log the parsed pitch
-            -- Successfully parsed a Pitch, so play the note
+            -- Parsed the Pitch, so play the note
             liftIO $ playNote pitch
             return [shamlet|Note played|]
         Nothing -> do
             liftIO $ putStrLn $ "Failed to parse pitch: " ++ noteStr  -- Log the failure
-            -- Failed to parse a Pitch, so return an error
+            -- Did not parse a Pitch, so return an error
             return [shamlet|Invalid note: #{noteStr}|]
 
 parsePitch :: String -> Maybe Pitch
 parsePitch s = case span isLetter s of
-
-    ("C", 's':rest)  -> Just (Cs, readOctave rest)
-    ("D", 's':rest)  -> Just (Ds, readOctave rest)
-    ("E", 's':rest)  -> Just (Es, readOctave rest)
-    ("F", 's':rest)  -> Just (Fs, readOctave rest)
-    ("G", 's':rest)  -> Just (Gs, readOctave rest)
-    ("A", 's':rest)  -> Just (As, readOctave rest)
-    ("B", 's':rest)  -> Just (Bs, readOctave rest)
     ("C", rest)      -> Just (C, readOctave rest)
+    ("Cs", rest)  -> Just (Cs, readOctave rest)
     ("D", rest)      -> Just (D, readOctave rest)
+    ("Ds", rest)  -> Just (Ds, readOctave rest)
     ("E", rest)      -> Just (E, readOctave rest)
     ("F", rest)      -> Just (F, readOctave rest)
+    ("Fs", rest)  -> Just (Fs, readOctave rest)
     ("G", rest)      -> Just (G, readOctave rest)
-    ("A", rest)      -> Just (A, readOctave rest)
+    ("Gs", rest)  -> Just (Gs, readOctave rest)
+    ("A", rest)  -> Just (A, readOctave rest)
+    ("As", rest)  -> Just (As, readOctave rest)
     ("B", rest)      -> Just (B, readOctave rest)
-    ("Gs", rest)     -> Just (Gs, readOctave rest)
-    ("Fs", rest)     -> Just (Fs, readOctave rest)
-    ("Ds", rest)     -> Just (Ds, readOctave rest)
-    ("As", rest)     -> Just (As, readOctave rest)
-    ("Cs", rest)     -> Just (Cs, readOctave rest)
-    ("Bs", rest)     -> Just (Bs, readOctave rest)
     _                -> Nothing
 
   where
