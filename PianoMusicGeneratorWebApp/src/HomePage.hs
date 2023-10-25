@@ -3,14 +3,14 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 module HomePage where
 
-import Foundation -- Import the module where your foundation is defined
+import Foundation
 import Yesod.Core
 
 -- HomePage.hs
 class HasHomeHandler master where
     getHomeHandler :: HandlerFor master Html
 
-instance HasHomeHandler App where -- Assuming your foundation is named `App`
+instance HasHomeHandler App where
     getHomeHandler = getHomeR
 
 
@@ -100,5 +100,4 @@ getHomeR = defaultLayout $ do
                     fetch('/getGenerateMusicR');
                 }
             });
-
     |]
