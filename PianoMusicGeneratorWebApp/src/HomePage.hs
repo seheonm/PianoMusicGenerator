@@ -3,14 +3,14 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 module HomePage where
 
-import Foundation -- Import the module where your foundation is defined
+import Foundation
 import Yesod.Core
 
 -- HomePage.hs
 class HasHomeHandler master where
     getHomeHandler :: HandlerFor master Html
 
-instance HasHomeHandler App where -- Assuming your foundation is named `App`
+instance HasHomeHandler App where
     getHomeHandler = getHomeR
 
 
@@ -61,7 +61,7 @@ getHomeR = defaultLayout $ do
             <button .white-key onclick="playNote('B5')">
 
         <div .music-settings>
-            <form>
+            <form id="music-settings-form">
                 <label for="timeSignature">Time Signature:
                 <select id="timeSignature" name="timeSignature">
                     <option value="4/4">4/4
@@ -87,18 +87,33 @@ getHomeR = defaultLayout $ do
                     <option value="Db">Db
                     <option value="Gb">Gb
                     <option value="Cb">Cb
-                <button type="submit" onclick="generateMusic()">Apply
+                <button type="button" onclick="generateMusic()">Generate
 
-        
         <script>
 
             document.addEventListener("DOMContentLoaded", function() {
                 window.playNote = function(note) {
                     fetch(`/getPlayNoteR/${note}`);
                 }
-                window.generateMusic = function() {
-                    fetch('/getGenerateMusicR');
+                
+                window.generateMusic = async function() {
+                    const form = document.getElementById('music-settings-form');
+                    const formData = new FormData(form);
+                    const settings = Object.fromEntries(formData.entries());
+
+                    try {
+                    const response = await fetch(`/getGenerateMusicR?bpm=${settings.bpm}&timeSignature=${settings.timeSignature}`);
+
+                    if (response.ok) {
+                    const text = await response.text();
+                    console.log(text);  // You can update the page here if needed
+                     } else {
+                    console.error('Failed to fetch', response.status, response.statusText);
+                    }
+
+                    } catch (error) {
+                    console.error('Fetch error:', error);
+                    }
                 }
             });
-
-    |]
+|]

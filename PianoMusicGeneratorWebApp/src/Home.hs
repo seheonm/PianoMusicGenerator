@@ -8,15 +8,34 @@ import Foundation
 import Yesod.Core
 import Euterpea
 import Control.Concurrent (threadDelay)
+import Data.Maybe (fromMaybe)
+import qualified Data.Text as T
 
-playMusic :: Music Pitch -> IO ()
-playMusic m = play $ tempo (120/60) m
+
+playMusic :: Double -> TimeSignature -> Music Pitch -> IO ()
+playMusic bpm timeSignature m = play $ tempo (toRational (bpm / 120)) m
+
 
 getGenerateMusicR :: Handler Html
 getGenerateMusicR = do
-    liftIO $ playMusic $ line $ replicate 16 $ note qn (C, 4)
-    return [shamlet|Music Played|]
+    mbBpm <- lookupGetParam "bpm"
+    mbTimeSignature <- lookupGetParam "timeSignature"
+    let bpm = fromMaybe "120" (fmap T.unpack mbBpm)
+    liftIO $ putStrLn $ "BPM: " ++ bpm
+    let timeSignatureStr = fromMaybe "4/4" (fmap T.unpack mbTimeSignature)
+    case parseTimeSignature timeSignatureStr of
+        Just timeSignature -> do
+            liftIO $ playMusic (read bpm :: Double) timeSignature $ line $ replicate 16 $ note qn (C, 4)
+            return [shamlet|Music Played|]
+        Nothing -> return [shamlet|Invalid Time Signature|]
 
+
+type TimeSignature = (Int, Int)
+
+parseTimeSignature :: String -> Maybe TimeSignature
+parseTimeSignature str = case map T.unpack . T.splitOn (T.pack "/") . T.pack $ str of
+    [num, denom] -> Just (read num, read denom)
+    _            -> Nothing
 
 playNote :: Pitch -> IO ()
 playNote p = play $ note qn p
