@@ -6,6 +6,16 @@ import Data.Char (isLetter)
 import Foundation
 import Yesod.Core
 import Euterpea
+import Control.Concurrent (threadDelay)
+
+playMusic :: Music Pitch -> IO ()
+playMusic m = play $ tempo (120/60) m
+
+getGenerateMusicR :: Handler Html
+getGenerateMusicR = do
+    liftIO $ playMusic $ line $ replicate 16 $ note qn (C, 4)
+    return [shamlet|Music Played|]
+
 
 playNote :: Pitch -> IO ()
 playNote p = play $ note qn p
@@ -120,12 +130,18 @@ getHomeR = defaultLayout $ do
                     <option value="Db">Db
                     <option value="Gb">Gb
                     <option value="Cb">Cb
-                <button type="submit">Apply
+                <button type="submit" onclick="generateMusic()">Apply
+
         
         <script>
+
             document.addEventListener("DOMContentLoaded", function() {
                 window.playNote = function(note) {
                     fetch(`/getPlayNoteR/${note}`);
                 }
+                window.generateMusic = function() {
+                    fetch('/getGenerateMusicR');
+                }
             });
+
     |]
