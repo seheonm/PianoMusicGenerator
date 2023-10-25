@@ -2,4 +2,4 @@
 /              HomeR GET
 /add/#Int/#Int AddR  GET
 /getPlayNoteR/#String PlayNoteR GET
-
+/getGenerateMusicR GenerateMusicR GET
