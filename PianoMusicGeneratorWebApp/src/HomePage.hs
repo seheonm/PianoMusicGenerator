@@ -116,4 +116,7 @@ getHomeR = defaultLayout $ do
                     }
                 }
             });
+            
 |]
+
+
