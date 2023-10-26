@@ -10,6 +10,7 @@ import Euterpea
 import Control.Concurrent (threadDelay)
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
+import Text.Read (readMaybe)
 
 
 playMusic :: Double -> TimeSignature -> Music Pitch -> IO ()
@@ -30,16 +31,40 @@ keySignatureToPitch "Bb" = Just (As, 4)
 keySignatureToPitch "F" = Just (F, 4)
 keySignatureToPitch _ = Nothing
 
+noteValueToDuration :: Int -> Dur
+noteValueToDuration 1 = wn
+noteValueToDuration 2 = hn
+noteValueToDuration 4 = qn
+noteValueToDuration 8 = en
+noteValueToDuration 16 = sn
+noteValueToDuration _ = error "Unsupported note value"
+
+
 
 getGenerateMusicR :: Handler Html
 getGenerateMusicR = do
     mbKeySignature <- lookupGetParam "keySignature"
-    let keySignature = fromMaybe "C" (fmap T.unpack mbKeySignature)
+    mbBpm <- lookupGetParam "bpm"
+    
+    mbTimeSignature <- lookupGetParam "timeSignature"
+    let timeSignature = fromMaybe (4,4) (mbTimeSignature >>= parseTimeSignature . T.unpack)
+        numMeasures = 4  -- Fixed alignment here
+
+        keySignature = fromMaybe "C" (fmap T.unpack mbKeySignature)
+        bpm = fromMaybe 120 (mbBpm >>= readMaybe . T.unpack)  -- Default to 120 if not present or invalid
+    
     case keySignatureToPitch keySignature of
         Just pitch -> do
-            liftIO $ playMusic 120 (4,4) $ line $ replicate 4 $ note qn pitch
+            liftIO $ playMusic (fromIntegral bpm) timeSignature $ generateMusic timeSignature numMeasures pitch
             return [shamlet|Music Played|]
         Nothing -> return [shamlet|Invalid Key Signature|]
+
+generateMusic :: TimeSignature -> Int -> Pitch -> Music Pitch
+generateMusic (numBeats, beatValue) numMeasures pitch = 
+  let dur = noteValueToDuration beatValue
+      measure = line . replicate numBeats $ note dur pitch
+  in line . replicate numMeasures $ measure
+
 
 
 
@@ -49,6 +74,9 @@ parseTimeSignature :: String -> Maybe TimeSignature
 parseTimeSignature str = case map T.unpack . T.splitOn (T.pack "/") . T.pack $ str of
     [num, denom] -> Just (read num, read denom)
     _            -> Nothing
+
+
+
 
 playNote :: Pitch -> IO ()
 playNote p = play $ note qn p
