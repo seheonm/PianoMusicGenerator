@@ -15,19 +15,23 @@ import qualified Data.Text as T
 playMusic :: Double -> TimeSignature -> Music Pitch -> IO ()
 playMusic bpm timeSignature m = play $ tempo (toRational (bpm / 120)) m
 
+keySignatureToPitch :: String -> Maybe Pitch
+keySignatureToPitch "C" = Just (C, 4)
+keySignatureToPitch "D" = Just (D, 4)
+-- Add other mappings here
+keySignatureToPitch _ = Nothing
+
 
 getGenerateMusicR :: Handler Html
 getGenerateMusicR = do
-    mbBpm <- lookupGetParam "bpm"
-    mbTimeSignature <- lookupGetParam "timeSignature"
-    let bpm = fromMaybe "120" (fmap T.unpack mbBpm)
-    liftIO $ putStrLn $ "BPM: " ++ bpm
-    let timeSignatureStr = fromMaybe "4/4" (fmap T.unpack mbTimeSignature)
-    case parseTimeSignature timeSignatureStr of
-        Just timeSignature -> do
-            liftIO $ playMusic (read bpm :: Double) timeSignature $ line $ replicate 16 $ note qn (C, 4)
+    mbKeySignature <- lookupGetParam "keySignature"
+    let keySignature = fromMaybe "C" (fmap T.unpack mbKeySignature)
+    case keySignatureToPitch keySignature of
+        Just pitch -> do
+            liftIO $ playMusic 120 (4,4) $ line $ replicate 16 $ note qn pitch
             return [shamlet|Music Played|]
-        Nothing -> return [shamlet|Invalid Time Signature|]
+        Nothing -> return [shamlet|Invalid Key Signature|]
+
 
 
 type TimeSignature = (Int, Int)
