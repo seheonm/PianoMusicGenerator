@@ -78,15 +78,12 @@ getHomeR = defaultLayout $ do
                     <option value="A">A
                     <option value="E">E
                     <option value="B">B
-                    <option value="F#">F&#35;
-                    <option value="C#">C&#35;
-                    <option value="F">F
-                    <option value="Bb">Bb
-                    <option value="Eb">Eb
-                    <option value="Ab">Ab
-                    <option value="Db">Db
                     <option value="Gb">Gb
-                    <option value="Cb">Cb
+                    <option value="Db">Db
+                    <option value="Ab">Ab
+                    <option value="Eb">Eb
+                    <option value="Bb">Bb
+                    <option value="F">F
                 <button type="button" onclick="generateMusic()">Generate
 
         <script>

@@ -17,8 +17,17 @@ playMusic bpm timeSignature m = play $ tempo (toRational (bpm / 120)) m
 
 keySignatureToPitch :: String -> Maybe Pitch
 keySignatureToPitch "C" = Just (C, 4)
+keySignatureToPitch "G" = Just (G, 4)
 keySignatureToPitch "D" = Just (D, 4)
--- Add other mappings here
+keySignatureToPitch "A" = Just (A, 4)
+keySignatureToPitch "E" = Just (E, 4)
+keySignatureToPitch "B" = Just (B, 4)
+keySignatureToPitch "Gb" = Just (Fs, 4)
+keySignatureToPitch "Db" = Just (Cs, 4)
+keySignatureToPitch "Ab" = Just (Gs, 4)
+keySignatureToPitch "Eb" = Just (Ds, 4)
+keySignatureToPitch "Bb" = Just (As, 4)
+keySignatureToPitch "F" = Just (F, 4)
 keySignatureToPitch _ = Nothing
 
 
@@ -28,7 +37,7 @@ getGenerateMusicR = do
     let keySignature = fromMaybe "C" (fmap T.unpack mbKeySignature)
     case keySignatureToPitch keySignature of
         Just pitch -> do
-            liftIO $ playMusic 120 (4,4) $ line $ replicate 16 $ note qn pitch
+            liftIO $ playMusic 120 (4,4) $ line $ replicate 4 $ note qn pitch
             return [shamlet|Music Played|]
         Nothing -> return [shamlet|Invalid Key Signature|]
 
