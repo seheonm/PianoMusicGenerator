@@ -39,8 +39,6 @@ noteValueToDuration 8 = en
 noteValueToDuration 16 = sn
 noteValueToDuration _ = error "Unsupported note value"
 
-
-
 getGenerateMusicR :: Handler Html
 getGenerateMusicR = do
     mbKeySignature <- lookupGetParam "keySignature"
