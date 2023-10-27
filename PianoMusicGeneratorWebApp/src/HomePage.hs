@@ -78,15 +78,12 @@ getHomeR = defaultLayout $ do
                     <option value="A">A
                     <option value="E">E
                     <option value="B">B
-                    <option value="F#">F#
-                    <option value="C#">C#
-                    <option value="F">F
-                    <option value="Bb">Bb
-                    <option value="Eb">Eb
-                    <option value="Ab">Ab
-                    <option value="Db">Db
                     <option value="Gb">Gb
-                    <option value="Cb">Cb
+                    <option value="Db">Db
+                    <option value="Ab">Ab
+                    <option value="Eb">Eb
+                    <option value="Bb">Bb
+                    <option value="F">F
                 <button type="button" onclick="generateMusic()">Generate
 
         <script>
@@ -102,14 +99,14 @@ getHomeR = defaultLayout $ do
                     const settings = Object.fromEntries(formData.entries());
 
                     try {
-                    const response = await fetch(`/getGenerateMusicR?bpm=${settings.bpm}&timeSignature=${settings.timeSignature}`);
+                        const response = await fetch(`/getGenerateMusicR?bpm=${settings.bpm}&timeSignature=${settings.timeSignature}&keySignature=${settings.keySignature}`);
 
-                    if (response.ok) {
-                    const text = await response.text();
-                    console.log(text);  // You can update the page here if needed
-                     } else {
-                    console.error('Failed to fetch', response.status, response.statusText);
-                    }
+                        if (response.ok) {
+                        const text = await response.text();
+                        console.log(text);  // You can update the page here if needed
+                        } else {
+                        console.error('Failed to fetch', response.status, response.statusText);
+                        }
 
                     } catch (error) {
                     console.error('Fetch error:', error);

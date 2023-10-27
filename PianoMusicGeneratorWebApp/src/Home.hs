@@ -10,24 +10,62 @@ import Euterpea
 import Control.Concurrent (threadDelay)
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
+import Text.Read (readMaybe)
 
 
 playMusic :: Double -> TimeSignature -> Music Pitch -> IO ()
 playMusic bpm timeSignature m = play $ tempo (toRational (bpm / 120)) m
 
+keySignatureToPitch :: String -> Maybe Pitch
+keySignatureToPitch "C" = Just (C, 4)
+keySignatureToPitch "G" = Just (G, 4)
+keySignatureToPitch "D" = Just (D, 4)
+keySignatureToPitch "A" = Just (A, 4)
+keySignatureToPitch "E" = Just (E, 4)
+keySignatureToPitch "B" = Just (B, 4)
+keySignatureToPitch "Gb" = Just (Fs, 4)
+keySignatureToPitch "Db" = Just (Cs, 4)
+keySignatureToPitch "Ab" = Just (Gs, 4)
+keySignatureToPitch "Eb" = Just (Ds, 4)
+keySignatureToPitch "Bb" = Just (As, 4)
+keySignatureToPitch "F" = Just (F, 4)
+keySignatureToPitch _ = Nothing
+
+noteValueToDuration :: Int -> Dur
+noteValueToDuration 1 = wn
+noteValueToDuration 2 = hn
+noteValueToDuration 4 = qn
+noteValueToDuration 8 = en
+noteValueToDuration 16 = sn
+noteValueToDuration _ = error "Unsupported note value"
+
+
 
 getGenerateMusicR :: Handler Html
 getGenerateMusicR = do
+    mbKeySignature <- lookupGetParam "keySignature"
     mbBpm <- lookupGetParam "bpm"
+    
     mbTimeSignature <- lookupGetParam "timeSignature"
-    let bpm = fromMaybe "120" (fmap T.unpack mbBpm)
-    liftIO $ putStrLn $ "BPM: " ++ bpm
-    let timeSignatureStr = fromMaybe "4/4" (fmap T.unpack mbTimeSignature)
-    case parseTimeSignature timeSignatureStr of
-        Just timeSignature -> do
-            liftIO $ playMusic (read bpm :: Double) timeSignature $ line $ replicate 16 $ note qn (C, 4)
+    let timeSignature = fromMaybe (4,4) (mbTimeSignature >>= parseTimeSignature . T.unpack)
+        numMeasures = 4  -- Fixed alignment here
+
+        keySignature = fromMaybe "C" (fmap T.unpack mbKeySignature)
+        bpm = fromMaybe 120 (mbBpm >>= readMaybe . T.unpack)  -- Default to 120 if not present or invalid
+    
+    case keySignatureToPitch keySignature of
+        Just pitch -> do
+            liftIO $ playMusic (fromIntegral bpm) timeSignature $ generateMusic timeSignature numMeasures pitch
             return [shamlet|Music Played|]
-        Nothing -> return [shamlet|Invalid Time Signature|]
+        Nothing -> return [shamlet|Invalid Key Signature|]
+
+generateMusic :: TimeSignature -> Int -> Pitch -> Music Pitch
+generateMusic (numBeats, beatValue) numMeasures pitch = 
+  let dur = noteValueToDuration beatValue
+      measure = line . replicate numBeats $ note dur pitch
+  in line . replicate numMeasures $ measure
+
+
 
 
 type TimeSignature = (Int, Int)
@@ -36,6 +74,9 @@ parseTimeSignature :: String -> Maybe TimeSignature
 parseTimeSignature str = case map T.unpack . T.splitOn (T.pack "/") . T.pack $ str of
     [num, denom] -> Just (read num, read denom)
     _            -> Nothing
+
+
+
 
 playNote :: Pitch -> IO ()
 playNote p = play $ note qn p
