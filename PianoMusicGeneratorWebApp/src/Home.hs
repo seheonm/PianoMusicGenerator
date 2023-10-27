@@ -7,10 +7,13 @@ import Data.Char (isLetter)
 import Foundation
 import Yesod.Core
 import Euterpea
-import Control.Concurrent (threadDelay)
+import System.Random (randomRIO)
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import Text.Read (readMaybe)
+import Control.Concurrent (forkIO)
+
+
 
 
 playMusic :: Double -> TimeSignature -> Music Pitch -> IO ()
@@ -46,24 +49,34 @@ getGenerateMusicR = do
     
     mbTimeSignature <- lookupGetParam "timeSignature"
     let timeSignature = fromMaybe (4,4) (mbTimeSignature >>= parseTimeSignature . T.unpack)
-        numMeasures = 4  -- Fixed alignment here
+        numMeasures = 2
 
         keySignature = fromMaybe "C" (fmap T.unpack mbKeySignature)
         bpm = fromMaybe 120 (mbBpm >>= readMaybe . T.unpack)  -- Default to 120 if not present or invalid
     
     case keySignatureToPitch keySignature of
         Just pitch -> do
-            liftIO $ playMusic (fromIntegral bpm) timeSignature $ generateMusic timeSignature numMeasures pitch
+            music <- liftIO $ generateMusic timeSignature numMeasures pitch
+            _ <- liftIO $ forkIO $ playMusic (fromIntegral bpm) timeSignature music
             return [shamlet|Music Played|]
         Nothing -> return [shamlet|Invalid Key Signature|]
+    
 
-generateMusic :: TimeSignature -> Int -> Pitch -> Music Pitch
-generateMusic (numBeats, beatValue) numMeasures pitch = 
+
+generateMusic :: TimeSignature -> Int -> Pitch -> IO (Music Pitch)
+generateMusic (numBeats, beatValue) numMeasures pitch@(pc, oct) = do
   let dur = noteValueToDuration beatValue
-      measure = line . replicate numBeats $ note dur pitch
-  in line . replicate numMeasures $ measure
-
-
+      scale = majorScale pitch  
+      generateRandomPitch :: IO Pitch
+      generateRandomPitch = do
+        index <- randomRIO (0, length scale - 1)
+        return $ scale !! index
+      generateMeasure :: IO (Music Pitch)
+      generateMeasure = do
+        notes <- mapM (\_ -> generateRandomPitch >>= \p -> return $ note dur p) [1..numBeats]
+        return $ line notes
+  measures <- mapM (\_ -> generateMeasure) [1..numMeasures]
+  return $ line measures
 
 
 type TimeSignature = (Int, Int)
@@ -73,8 +86,14 @@ parseTimeSignature str = case map T.unpack . T.splitOn (T.pack "/") . T.pack $ s
     [num, denom] -> Just (read num, read denom)
     _            -> Nothing
 
-
-
+majorScale :: Pitch -> [Pitch]
+majorScale (p, o) = take 8 $ iterate (nextPitch) (p, o)
+  where
+    nextPitch :: Pitch -> Pitch
+    nextPitch (p, o) = case p of
+      B  -> (C, o + 1)
+      E  -> (F, o)
+      _  -> (succ p, o)
 
 playNote :: Pitch -> IO ()
 playNote p = play $ note qn p
