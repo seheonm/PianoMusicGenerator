@@ -9,6 +9,7 @@ dependencies:
 - Euterpea
 - yesod
 - text
+- random
 
 # The library contains all of our application code. The executable
 # defined below is just a thin wrapper.
@@ -29,3 +30,4 @@ executables:
     - base >= 4.7 && < 5
     - yesod
     - text
+    - random
