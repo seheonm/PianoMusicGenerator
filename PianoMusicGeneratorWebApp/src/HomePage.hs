@@ -89,9 +89,29 @@ getHomeR = defaultLayout $ do
         <script>
 
             document.addEventListener("DOMContentLoaded", function() {
-                window.playNote = function(note) {
-                    fetch(`/getPlayNoteR/${note}`);
+                let lastPlayed = 0;
+                const rateLimit = 2000; // minimum time between note plays in milliseconds
+
+                window.playNote = async function(note) {
+                    const now = Date.now();
+                    if (now - lastPlayed < rateLimit) {
+                        console.log('Rate limited');
+                        return;
+                    }
+                    lastPlayed = now;
+
+                    try {
+                        const response = await fetch(`/getPlayNoteR/${note}`);
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        const data = await response.text();
+                        console.log(data);
+                    } catch (error) {
+                        console.error('Failed to fetch note:', error);
+                    }
                 }
+
                 
                 window.generateMusic = async function() {
                     const form = document.getElementById('music-settings-form');
