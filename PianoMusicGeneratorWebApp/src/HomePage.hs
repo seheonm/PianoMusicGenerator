@@ -90,7 +90,7 @@ getHomeR = defaultLayout $ do
 
             document.addEventListener("DOMContentLoaded", function() {
                 let lastPlayed = 0;
-                const rateLimit = 2000; // minimum time between note plays in milliseconds
+                const rateLimit = 200; // minimum time between note plays in milliseconds
 
                 window.playNote = async function(note) {
                     const now = Date.now();
