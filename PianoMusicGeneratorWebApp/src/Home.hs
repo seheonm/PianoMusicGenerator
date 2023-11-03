@@ -13,12 +13,13 @@ import qualified Data.Text as T
 import Text.Read (readMaybe)
 import Control.Concurrent (forkIO)
 
-
-
-
+-- Takes a beats per minute (bpm), a time signature, and a music piece
 playMusic :: Double -> TimeSignature -> Music Pitch -> IO ()
+-- Plays the music piece at a tempo, which is adjusted by the bpm relative to the tempo (120 bpm)
 playMusic bpm timeSignature m = play $ tempo (toRational (bpm / 120)) m
 
+-- Mmaps a musical key signature represented as a string to a corresponding Pitch. This includes the notes and octaves
+-- If the key signature is not recognized, it returns Nothing
 keySignatureToPitch :: String -> Maybe Pitch
 keySignatureToPitch "C" = Just (C, 4)
 keySignatureToPitch "G" = Just (G, 4)
@@ -60,8 +61,6 @@ getGenerateMusicR = do
             _ <- liftIO $ forkIO $ playMusic (fromIntegral bpm) timeSignature music
             return [shamlet|Music Played|]
         Nothing -> return [shamlet|Invalid Key Signature|]
-    
-
 
 generateMusic :: TimeSignature -> Int -> Pitch -> IO (Music Pitch)
 generateMusic (numBeats, beatValue) numMeasures pitch@(pc, oct) = do
@@ -77,7 +76,6 @@ generateMusic (numBeats, beatValue) numMeasures pitch@(pc, oct) = do
         return $ line notes
   measures <- mapM (\_ -> generateMeasure) [1..numMeasures]
   return $ line measures
-
 
 type TimeSignature = (Int, Int)
 
@@ -95,9 +93,13 @@ majorScale (p, o) = take 8 $ iterate (nextPitch) (p, o)
       E  -> (F, o)
       _  -> (succ p, o)
 
+-- Takes a Pitch and plays a single note
 playNote :: Pitch -> IO ()
+-- Creates a quarter note with the given Pitch
 playNote p = play $ note qn p
 
+-- Handler function that takes a string representation of a note and tries to parse it into a Pitch 
+-- If successful, it plays the note, otherwise there's an error
 getPlayNoteR :: String -> Handler Html
 getPlayNoteR noteStr = do
     liftIO $ putStrLn $ "Received note: " ++ noteStr  -- Log the received note
@@ -112,6 +114,8 @@ getPlayNoteR noteStr = do
             -- Did not parse a Pitch, so return an error
             return [shamlet|Invalid note: #{noteStr}|]
 
+-- Function tries to convert a string into a Pitch and it looks for a note name followed by an octave number
+-- If the parsing works, it returns Just Pitch and if not, it returns Nothing
 parsePitch :: String -> Maybe Pitch
 parsePitch s = case span isLetter s of
     ("C", rest)      -> Just (C, readOctave rest)
@@ -128,12 +132,13 @@ parsePitch s = case span isLetter s of
     ("B", rest)      -> Just (B, readOctave rest)
     _                -> Nothing
 
+  -- Takes a string and tries to parse it into an integer representing the octave. 
+  -- If the string is parsed into a number then by nothing else, that number is returned, but if not there will be an error
   where
     readOctave str = 
       case reads str :: [(Int, String)] of
         [(val, "")] -> val
         _           -> error $ "Invalid octave: " ++ str
-
 
 getHomeR :: HasHomeHandler master => HandlerFor master Html
 getHomeR = getHomeHandler

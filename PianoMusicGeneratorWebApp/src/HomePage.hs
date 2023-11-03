@@ -13,7 +13,7 @@ class HasHomeHandler master where
 instance HasHomeHandler App where
     getHomeHandler = getHomeR
 
-
+-- Greets the user, creates a pinao interface with three octaves, and creates the music generator
 getHomeR = defaultLayout $ do 
     addStylesheet $ StaticR styles_css
     [whamlet|
@@ -87,7 +87,6 @@ getHomeR = defaultLayout $ do
                 <button type="button" onclick="generateMusic()">Generate
 
         <script>
-
             document.addEventListener("DOMContentLoaded", function() {
                 let lastPlayed = 0;
                 const rateLimit = 200; // minimum time between note plays in milliseconds
