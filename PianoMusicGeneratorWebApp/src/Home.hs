@@ -38,6 +38,7 @@ keySignatureToPitch "Bb" = Just (As, 4)
 keySignatureToPitch "F" = Just (F, 4)
 keySignatureToPitch _ = Nothing
 
+
 -- Converts a note value into a corresponding duration (whole note, half note)
 -- Throws an error if an unsupported note value is provided
 noteValueToDuration :: Int -> Dur
@@ -48,6 +49,7 @@ noteValueToDuration 4 = qn
 noteValueToDuration 8 = en
 noteValueToDuration 16 = sn
 noteValueToDuration _ = error "Unsupported note value"
+
 
 -- Web handler that generates and plays music based on parameters received in a GET request
 -- These parameters include key signatue, bpm, and time signature
@@ -71,6 +73,7 @@ getGenerateMusicR = do
             _ <- liftIO $ forkIO $ playMusic (fromIntegral bpm) timeSignature music
             return [shamlet|Music Played|]
         Nothing -> return [shamlet|Invalid Key Signature|]
+
 
 -- Generates a music piece based on a given time signature, number of measures, and starting pitch
 generateMusic :: TimeSignature -> Int -> Pitch -> IO (Music Pitch)
@@ -100,6 +103,7 @@ parseTimeSignature :: String -> Maybe TimeSignature
 parseTimeSignature str = case map T.unpack . T.splitOn (T.pack "/") . T.pack $ str of
     [num, denom] -> Just (read num, read denom)
     _            -> Nothing
+
 
 -- Generates a major scale starting from a given pitch
 majorScale :: Pitch -> [Pitch]
@@ -159,5 +163,9 @@ parsePitch s = case span isLetter s of
         [(val, "")] -> val
         _           -> error $ "Invalid octave: " ++ str
 
+--   A simple handler function that delegates the request to a 'getHomeHandler'. It is assumed that 'getHomeHandler'
+--   is defined within the 'HasHomeHandler' typeclass, which the 'master' type must be an instance of.
+--   This function is typically used in web applications using the Yesod framework to handle the default route
+--   associated with the home page. It returns an 'Html' response to be rendered by the browser.
 getHomeR :: HasHomeHandler master => HandlerFor master Html
 getHomeR = getHomeHandler

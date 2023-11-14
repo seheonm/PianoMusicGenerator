@@ -22,6 +22,10 @@ getHomeR = defaultLayout $ do
     [whamlet|
         By: Marina Seheon, Jack Vanlyssel, and Joesph Barela
         
+        <!-- This section creates a virtual piano interface for playing musical notes.
+        It includes buttons representing white and black keys with corresponding note values.
+        When a button is clicked, it triggers the 'playNote' JavaScript function with the associated note value.
+        This allows users to interactively play musical notes on the virtual piano.-->
         <div class="greeting">
             Hello, welcome to our Piano Music Generator!
 
@@ -63,6 +67,12 @@ getHomeR = defaultLayout $ do
             <button .black-key onclick="playNote('As5')">
             <button .white-key onclick="playNote('B5')">
 
+        <!-- This section provides a form for the user to input settings for music generation.
+        It includes fields to select the time signature, beats per minute (BPM), and key signature.
+        Each field is labeled accordingly, and the form includes options for common time signatures and key signatures.
+        The 'Generate Music' button is set up to call the 'generateMusic()' function when clicked.
+        This function would typically be defined in a script to handle the form submission asynchronously. -->
+
         <div .music-settings>
             <form id="music-settings-form">
                 <label for="timeSignature">Time Signature:
@@ -90,10 +100,16 @@ getHomeR = defaultLayout $ do
                 <button type="button" onclick="generateMusic()">Generate
 
         <script>
+            // This script sets up event listeners to respond to user interactions related to music generation.
+            // It includes functions to play a musical note with rate limiting and to generate music based on user-provided settings.
             document.addEventListener("DOMContentLoaded", function() {
                 let lastPlayed = 0;
                 const rateLimit = 200; // minimum time between note plays in milliseconds
 
+                // Function to play a musical note with rate limiting
+                // If called too frequently, it logs a 'Rate limited' message to the console.
+                // On success, it fetches the note play route and logs the server response.
+                // On failure, it logs an error message.
                 window.playNote = async function(note) {
                     const now = Date.now();
                     if (now - lastPlayed < rateLimit) {
@@ -114,6 +130,11 @@ getHomeR = defaultLayout $ do
                     }
                 }
 
+
+                // Function to generate music based on settings provided by the user through a form
+                // It gathers the settings from the form, constructs a request to the server, and handles the response.
+                // On success, it logs the response text to the console, which might be used to update the page.
+                // On failure, it logs an error message.
                 window.generateMusic = async function() {
                     const form = document.getElementById('music-settings-form');
                     const formData = new FormData(form);
