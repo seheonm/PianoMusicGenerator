@@ -35,6 +35,7 @@ keySignatureToPitch "Bb" = Just (As, 4)
 keySignatureToPitch "F" = Just (F, 4)
 keySignatureToPitch _ = Nothing
 
+-- Converts a whole note value representation to its corresponding duration in Euterpea's Dur type
 noteValueToDuration :: Int -> Dur
 noteValueToDuration 1 = wn
 noteValueToDuration 2 = hn
@@ -43,6 +44,7 @@ noteValueToDuration 8 = en
 noteValueToDuration 16 = sn
 noteValueToDuration _ = error "Unsupported note value"
 
+-- The handler for generating music based on query parameters for key signature, bpm, and time signature
 getGenerateMusicR :: Handler Html
 getGenerateMusicR = do
     mbKeySignature <- lookupGetParam "keySignature"
@@ -62,14 +64,25 @@ getGenerateMusicR = do
             return [shamlet|Music Played|]
         Nothing -> return [shamlet|Invalid Key Signature|]
 
+--   Generates a piece of music with a specified number of measures, each containing a series of notes with a random pitch from a major scale.
+--   The time signature dictates the number of beats per measure and the note value that receives one beat.
+--   Each note's duration is determined by the time signature's beat value, and the pitches are selected randomly from the major scale based on the starting pitch.
 generateMusic :: TimeSignature -> Int -> Pitch -> IO (Music Pitch)
 generateMusic (numBeats, beatValue) numMeasures pitch@(pc, oct) = do
   let dur = noteValueToDuration beatValue
       scale = majorScale pitch  
+      --   Generates a random pitch from the major scale derived from the provided starting pitch.
+      --   It uses a random index within the range of the scale to select a pitch. This function is
+      --   used to construct a measure of music by providing a random melody line where each note
+      --   is chosen from the major scale.
       generateRandomPitch :: IO Pitch
       generateRandomPitch = do
         index <- randomRIO (0, length scale - 1)
         return $ scale !! index
+      --   Constructs a single measure of music by generating a sequence of notes with random pitches
+      --   from the major scale. Each note has a duration based on the beat value of the time signature.
+      --   The notes are combined to form a melodic line within the measure, using the 'line' function
+      --   to sequentially compose the individual notes into a cohesive musical phrase.
       generateMeasure :: IO (Music Pitch)
       generateMeasure = do
         notes <- mapM (\_ -> generateRandomPitch >>= \p -> return $ note dur p) [1..numBeats]
@@ -79,11 +92,20 @@ generateMusic (numBeats, beatValue) numMeasures pitch@(pc, oct) = do
 
 type TimeSignature = (Int, Int)
 
+--   Parses a string representing a time signature into a 'TimeSignature' data type.
+--   A valid time signature string is expected to be in the format "numerator/denominator".
+--   If the string is correctly formatted, it will convert the numerator and denominator into integers
+--   and return them as a 'TimeSignature' (a tuple of two integers). If the format is incorrect,
+--   the function will return 'Nothing'.
 parseTimeSignature :: String -> Maybe TimeSignature
 parseTimeSignature str = case map T.unpack . T.splitOn (T.pack "/") . T.pack $ str of
     [num, denom] -> Just (read num, read denom)
     _            -> Nothing
 
+--   Constructs a major scale starting from a given pitch. The scale is generated as a list of 'Pitch'es,
+--   which are tuples consisting of a 'PitchClass' and an 'Octave'. The scale contains 8 pitches, including
+--   the starting pitch, following the sequence of whole and half steps that define a major scale.
+--   The 'nextPitch' helper function accounts for the natural half steps in the scale (from B to C, and from E to F).
 majorScale :: Pitch -> [Pitch]
 majorScale (p, o) = take 8 $ iterate (nextPitch) (p, o)
   where
@@ -140,5 +162,9 @@ parsePitch s = case span isLetter s of
         [(val, "")] -> val
         _           -> error $ "Invalid octave: " ++ str
 
+--   A simple handler function that delegates the request to a 'getHomeHandler'. It is assumed that 'getHomeHandler'
+--   is defined within the 'HasHomeHandler' typeclass, which the 'master' type must be an instance of.
+--   This function is typically used in web applications using the Yesod framework to handle the default route
+--   associated with the home page. It returns an 'Html' response to be rendered by the browser.
 getHomeR :: HasHomeHandler master => HandlerFor master Html
 getHomeR = getHomeHandler
