@@ -1,20 +1,23 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+
 module HomePage where
 
 import Foundation
 import Yesod.Core
 
--- HomePage.hs
+-- Defines a handler for the home page for any master site type
 class HasHomeHandler master where
     getHomeHandler :: HandlerFor master Html
 
+-- Specifies the home page handler for our main application
 instance HasHomeHandler App where
     getHomeHandler = getHomeR
 
 -- Greets the user, creates a pinao interface with three octaves, and creates the music generator
 getHomeR = defaultLayout $ do 
+    -- Linking the stylesheet for the page
     addStylesheet $ StaticR styles_css
     [whamlet|
         By: Marina Seheon, Jack Vanlyssel, and Joesph Barela
@@ -126,6 +129,7 @@ getHomeR = defaultLayout $ do
                         console.error('Failed to fetch note:', error);
                     }
                 }
+
 
                 // Function to generate music based on settings provided by the user through a form
                 // It gathers the settings from the form, constructs a request to the server, and handles the response.
