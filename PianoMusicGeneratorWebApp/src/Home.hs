@@ -16,6 +16,8 @@ import qualified Data.Text as T
 import Text.Read (readMaybe)
 import Control.Concurrent (forkIO)
 import Control.Monad (replicateM)
+import System.Random (randomRIO, randomIO)
+
 
 -- Takes a beats per minute (bpm), a time signature, and a music piece
 playMusic :: Double -> TimeSignature -> Music Pitch -> IO ()
@@ -68,12 +70,47 @@ getGenerateMusicR = do
             return [shamlet|Music Played|]
         Nothing -> return [shamlet|Invalid Key Signature|]
 
--- Generates two music pieces and combines them
+-- Generates a melody and a bass line, then combines them
 generateMusic :: TimeSignature -> Int -> Pitch -> IO (Music Pitch)
 generateMusic ts numMeasures pitch = do
-    line1 <- generateSingleLine ts numMeasures pitch
-    line2 <- generateSingleLine ts numMeasures pitch
-    return (line1 :=: line2)
+    melodyLine <- generateSingleLine ts numMeasures pitch  -- Melody line
+    bassLine <- generateBassLine ts numMeasures (lowerOctave pitch)  -- Bass line an octave lower
+    return (melodyLine :=: bassLine)
+
+generateBassLine :: TimeSignature -> Int -> Pitch -> IO (Music Pitch)
+generateBassLine ts numMeasures pitch = do
+    let scale = majorScale pitch
+    generateMeasure <- replicateM numMeasures (generateMeasureForBass ts scale)
+    return $ line generateMeasure
+
+
+generateMeasureForBass :: TimeSignature -> [Pitch] -> IO (Music Pitch)
+generateMeasureForBass (numBeats, beatValue) scale = do
+    let maxMeasureDur = fromIntegral numBeats * beatValueToDuration beatValue
+    generateSingleMeasure maxMeasureDur scale
+
+generateSingleMeasure :: Dur -> [Pitch] -> IO (Music Pitch)
+generateSingleMeasure maxDur scale = go maxDur (rest 0)
+  where
+    go remainingDur acc
+      | remainingDur <= 0 = return acc
+      | otherwise = do
+          pitch <- generateRandomPitch scale
+          dur <- chooseDur
+          let actualDur = min dur remainingDur
+          let newNote = note actualDur pitch
+          go (remainingDur - actualDur) (acc :+: newNote)
+
+
+
+
+
+    
+chooseDur :: IO Dur
+chooseDur = do
+    isWholeNote <- randomIO  -- Randomly decide whether to use a whole note
+    return $ if isWholeNote then wn else hn
+
 
 generateSingleLine :: TimeSignature -> Int -> Pitch -> IO (Music Pitch)
 generateSingleLine (numBeats, beatValue) numMeasures pitch = do
@@ -100,6 +137,13 @@ noteValueToDuration 8 = en
 noteValueToDuration 16 = sn
 noteValueToDuration _ = error "Unsupported note value"
 
+beatValueToDuration :: Int -> Dur
+beatValueToDuration 1 = 1
+beatValueToDuration 2 = 1/2
+beatValueToDuration 4 = 1/4
+beatValueToDuration 8 = 1/8
+-- and so on for other values
+
 majorScale :: Pitch -> [Pitch]
 majorScale (p, o) = take 8 $ iterate nextPitch (p, o)
   where
@@ -108,6 +152,9 @@ majorScale (p, o) = take 8 $ iterate nextPitch (p, o)
       E  -> (F, o)
       _  -> (succ p, o)
 
+-- Lower the pitch by one octave
+lowerOctave :: Pitch -> Pitch
+lowerOctave p = pitch (absPitch p - 12)
 
 -- type for a time signature represented as a pair of intergers
 type TimeSignature = (Int, Int)
