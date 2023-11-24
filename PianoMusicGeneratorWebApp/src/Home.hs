@@ -15,11 +15,12 @@ import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import Text.Read (readMaybe)
 import Control.Concurrent (forkIO)
+import Control.Monad (replicateM)
 
 -- Takes a beats per minute (bpm), a time signature, and a music piece
 playMusic :: Double -> TimeSignature -> Music Pitch -> IO ()
--- Plays the music piece at a tempo, which is adjusted by the bpm relative to the tempo (120 bpm)
 playMusic bpm timeSignature m = play $ tempo (toRational (bpm / 120)) m
+
 
 -- Maps a musical key signature represented as a string to a corresponding Pitch. This includes the notes and octaves
 -- If the key signature is not recognized, it returns Nothing
@@ -41,14 +42,7 @@ keySignatureToPitch _ = Nothing
 
 -- Converts a note value into a corresponding duration (whole note, half note)
 -- Throws an error if an unsupported note value is provided
-noteValueToDuration :: Int -> Dur
--- Mapping for each note value to its corresponding duration
-noteValueToDuration 1 = wn
-noteValueToDuration 2 = hn
-noteValueToDuration 4 = qn
-noteValueToDuration 8 = en
-noteValueToDuration 16 = sn
-noteValueToDuration _ = error "Unsupported note value"
+
 
 
 -- Web handler that generates and plays music based on parameters received in a GET request
@@ -74,25 +68,46 @@ getGenerateMusicR = do
             return [shamlet|Music Played|]
         Nothing -> return [shamlet|Invalid Key Signature|]
 
-
--- Generates a music piece based on a given time signature, number of measures, and starting pitch
+-- Generates two music pieces and combines them
 generateMusic :: TimeSignature -> Int -> Pitch -> IO (Music Pitch)
-generateMusic (numBeats, beatValue) numMeasures pitch@(pc, oct) = do
-  let dur = noteValueToDuration beatValue
-      scale = majorScale pitch  
-      -- Inner function to generate a random pitch from the scale
-      generateRandomPitch :: IO Pitch
-      generateRandomPitch = do
-        index <- randomRIO (0, length scale - 1)
-        return $ scale !! index
-        -- Inner function to generate a measure of music
-      generateMeasure :: IO (Music Pitch)
-      generateMeasure = do
-        notes <- mapM (\_ -> generateRandomPitch >>= \p -> return $ note dur p) [1..numBeats]
-        return $ line notes
-  -- Generating the full piece by combining measures
-  measures <- mapM (\_ -> generateMeasure) [1..numMeasures]
-  return $ line measures
+generateMusic ts numMeasures pitch = do
+    line1 <- generateSingleLine ts numMeasures pitch
+    line2 <- generateSingleLine ts numMeasures pitch
+    return (line1 :=: line2)
+
+generateSingleLine :: TimeSignature -> Int -> Pitch -> IO (Music Pitch)
+generateSingleLine (numBeats, beatValue) numMeasures pitch = do
+    let dur = noteValueToDuration beatValue
+        scale = majorScale pitch  
+    generateMeasure <- replicateM numMeasures (generateMeasureForLine numBeats dur scale)
+    return $ line generateMeasure
+
+generateMeasureForLine :: Int -> Dur -> [Pitch] -> IO (Music Pitch)
+generateMeasureForLine numBeats dur scale = do
+    notes <- replicateM numBeats (generateRandomPitch scale >>= \p -> return $ note dur p)
+    return $ line notes
+
+generateRandomPitch :: [Pitch] -> IO Pitch
+generateRandomPitch scale = do
+    index <- randomRIO (0, length scale - 1)
+    return $ scale !! index
+
+noteValueToDuration :: Int -> Dur
+noteValueToDuration 1 = wn
+noteValueToDuration 2 = hn
+noteValueToDuration 4 = qn
+noteValueToDuration 8 = en
+noteValueToDuration 16 = sn
+noteValueToDuration _ = error "Unsupported note value"
+
+majorScale :: Pitch -> [Pitch]
+majorScale (p, o) = take 8 $ iterate nextPitch (p, o)
+  where
+    nextPitch (p, o) = case p of
+      B  -> (C, o + 1)
+      E  -> (F, o)
+      _  -> (succ p, o)
+
 
 -- type for a time signature represented as a pair of intergers
 type TimeSignature = (Int, Int)
@@ -104,17 +119,6 @@ parseTimeSignature str = case map T.unpack . T.splitOn (T.pack "/") . T.pack $ s
     [num, denom] -> Just (read num, read denom)
     _            -> Nothing
 
-
--- Generates a major scale starting from a given pitch
-majorScale :: Pitch -> [Pitch]
-majorScale (p, o) = take 8 $ iterate (nextPitch) (p, o)
-  where
-    -- Calculates the next pitch in the scale
-    nextPitch :: Pitch -> Pitch
-    nextPitch (p, o) = case p of
-      B  -> (C, o + 1)
-      E  -> (F, o)
-      _  -> (succ p, o)
 
 -- Takes a Pitch and plays a single note
 playNote :: Pitch -> IO ()
