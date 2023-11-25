@@ -73,77 +73,52 @@ getGenerateMusicR = do
 -- Generates a melody and a bass line, then combines them
 generateMusic :: TimeSignature -> Int -> Pitch -> IO (Music Pitch)
 generateMusic ts numMeasures pitch = do
-    melodyLine <- generateSingleLine ts numMeasures pitch  -- Melody line
+    melodyLine <- generateMelodyLine ts numMeasures pitch  -- Melody line
     bassLine <- generateBassLine ts numMeasures (lowerOctave pitch)  -- Bass line an octave lower
     return (melodyLine :=: bassLine)
 
 generateBassLine :: TimeSignature -> Int -> Pitch -> IO (Music Pitch)
-generateBassLine ts numMeasures pitch = do
-    let scale = majorScale pitch
-    generateMeasure <- replicateM numMeasures (generateMeasureForBass ts scale)
-    return $ line generateMeasure
+generateBassLine ts numMeasures tonic = do
+    let chords = chordProgression tonic
+    measures <- mapM (generateBaroqueMeasureForBass ts chords) [1..numMeasures]
+    return $ line measures
 
+generateBaroqueMeasureForBass :: TimeSignature -> [Chord] -> Int -> IO (Music Pitch)
+generateBaroqueMeasureForBass (numBeats, beatValue) chords measureNumber = do
+    let chord = chords !! ((measureNumber - 1) `mod` length chords)
+        maxMeasureDur = fromIntegral numBeats * beatValueToDuration beatValue
+    generateSingleMeasure maxMeasureDur chord
 
-generateMeasureForBass :: TimeSignature -> [Pitch] -> IO (Music Pitch)
-generateMeasureForBass (numBeats, beatValue) scale = do
-    let maxMeasureDur = fromIntegral numBeats * beatValueToDuration beatValue
-    generateSingleMeasure maxMeasureDur scale
-
-generateSingleMeasure :: Dur -> [Pitch] -> IO (Music Pitch)
-generateSingleMeasure maxDur scale = go maxDur (rest 0)
+generateSingleMeasure :: Dur -> Chord -> IO (Music Pitch)
+generateSingleMeasure maxDur chord = go maxDur (rest 0)
   where
     go remainingDur acc
       | remainingDur <= 0 = return acc
       | otherwise = do
-          pitch <- generateRandomPitch scale
+          pitch <- generateNoteFromChord chord
           dur <- chooseDur
           let actualDur = min dur remainingDur
           let newNote = note actualDur pitch
           go (remainingDur - actualDur) (acc :+: newNote)
-
-
-
-
-
     
 chooseDur :: IO Dur
 chooseDur = do
     isWholeNote <- randomIO  -- Randomly decide whether to use a whole note
     return $ if isWholeNote then wn else hn
 
-
-generateSingleLine :: TimeSignature -> Int -> Pitch -> IO (Music Pitch)
-generateSingleLine (numBeats, beatValue) numMeasures pitch = do
-    let dur = noteValueToDuration beatValue
-        scale = majorScale pitch  
-    generateMeasure <- replicateM numMeasures (generateMeasureForLine numBeats dur scale)
-    return $ line generateMeasure
-
-generateMeasureForLine :: Int -> Dur -> [Pitch] -> IO (Music Pitch)
-generateMeasureForLine numBeats dur scale = do
-    notes <- replicateM numBeats (generateRandomPitch scale >>= \p -> return $ note dur p)
-    return $ line notes
-
 generateRandomPitch :: [Pitch] -> IO Pitch
 generateRandomPitch scale = do
     index <- randomRIO (0, length scale - 1)
     return $ scale !! index
 
-noteValueToDuration :: Int -> Dur
-noteValueToDuration 1 = wn
-noteValueToDuration 2 = hn
-noteValueToDuration 4 = qn
-noteValueToDuration 8 = en
-noteValueToDuration 16 = sn
-noteValueToDuration _ = error "Unsupported note value"
-
 beatValueToDuration :: Int -> Dur
-beatValueToDuration 1 = 1
-beatValueToDuration 2 = 1/2
-beatValueToDuration 4 = 1/4
-beatValueToDuration 8 = 1/8
--- and so on for other values
+beatValueToDuration 1 = wn
+beatValueToDuration 2 = hn
+beatValueToDuration 4 = qn
+beatValueToDuration 8 = en
+beatValueToDuration _ = error "Unsupported beat value"
 
+-- Helper function to generate a major scale based on a given tonic
 majorScale :: Pitch -> [Pitch]
 majorScale (p, o) = take 8 $ iterate nextPitch (p, o)
   where
@@ -165,6 +140,107 @@ parseTimeSignature :: String -> Maybe TimeSignature
 parseTimeSignature str = case map T.unpack . T.splitOn (T.pack "/") . T.pack $ str of
     [num, denom] -> Just (read num, read denom)
     _            -> Nothing
+
+type Chord = [Pitch]
+
+chordProgression :: Pitch -> [Chord]
+chordProgression tonic = [iChord, ivChord, vChord, iChord]
+  where
+    scale = majorScale tonic
+    iChord = take 3 scale  -- Tonic chord
+    ivChord = take 3 $ drop 3 scale  -- Subdominant chord
+    vChord = take 3 $ drop 4 scale  -- Dominant chord
+
+    
+generateNoteFromChord :: Chord -> IO Pitch
+generateNoteFromChord chord = do
+    index <- randomRIO (0, length chord - 1)
+    return $ chord !! index
+
+generateMelodyLine :: TimeSignature -> Int -> Pitch -> IO (Music Pitch)
+generateMelodyLine (numBeats, beatValue) numMeasures tonic = do
+    let chords = chordProgression tonic
+        melodyDur = beatValueToDuration beatValue  -- Duration of each beat
+    measures <- mapM (\measureNum -> generateMeasureForMelody (numBeats, melodyDur) (chords !! ((measureNum - 1) `mod` length chords))) [1..numMeasures]
+    return $ line measures
+
+generateMeasureForMelody :: (Int, Dur) -> Chord -> IO (Music Pitch)
+generateMeasureForMelody (numBeats, beatDur) chord = do
+    notes <- replicateM numBeats (generateNoteFromChordForMelody chord >>= \p -> return $ note beatDur p)
+    return $ line notes
+
+
+generateBaroqueMeasureForMelody :: TimeSignature -> [Chord] -> Int -> IO (Music Pitch)
+generateBaroqueMeasureForMelody (numBeats, _) chords measureNumber = do
+    let chord = chords !! ((measureNumber - 1) `mod` length chords)
+    pitches <- mapM (\_ -> generateNoteFromChordForMelody chord) [1..numBeats]
+    let notes = map (\p -> note en p) pitches  -- Convert each pitch to an eighth note
+    return $ line notes
+
+generateNoteFromChordForMelody :: Chord -> IO Pitch
+generateNoteFromChordForMelody chord = do
+    index <- randomRIO (0, length chord - 1)
+    return $ chord !! index
+
+
+-- Generate counterpoint by harmonizing melody and bass
+generateCounterpoint :: Music Pitch -> IO (Music Pitch)
+generateCounterpoint melody = do
+    -- Extract pitches and durations from the melody
+    let (melodyPitches, melodyDurations) = unzip $ extractMelody melody
+    -- Generate bass pitches based on melody pitches
+    bassPitches <- mapM harmonizeWithMelody melodyPitches
+    -- Combine bass pitches with melody durations to create bass line
+    let bassLine = zipWith note melodyDurations bassPitches
+    return $ line bassLine
+
+-- Function to harmonize bass note with melody note
+harmonizeWithMelody :: Pitch -> IO Pitch
+harmonizeWithMelody melodyPitch = do
+    interval <- randomRIO (1, 3) :: IO Int
+    let bassPitch = case interval of
+                      1 -> transposePitch (-12) melodyPitch  -- Octave below
+                      2 -> transposePitch (-7) melodyPitch   -- Perfect fifth below
+                      3 -> transposePitch (-3) melodyPitch   -- Minor third below
+    return bassPitch
+
+-- Extended chord progression function
+extendedChordProgression :: Pitch -> [Chord]
+extendedChordProgression tonic = 
+    [iChord, iiChord, iiiChord, ivChord, vChord, viChord, viiDimChord, iChord]
+  where
+    scale = majorScale tonic
+    -- Basic chords
+    iChord = take 3 scale  -- Tonic chord
+    ivChord = take 3 $ drop 3 scale  -- Subdominant chord
+    vChord = take 3 $ drop 4 scale  -- Dominant chord
+
+    -- Extended chords
+    iiChord = take 3 $ drop 1 scale  -- Supertonic chord
+    iiiChord = take 3 $ drop 2 scale  -- Mediant chord
+    viChord = take 3 $ drop 5 scale  -- Submediant chord
+    viiDimChord = take 3 $ drop 6 scale  -- Leading tone chord, diminished
+
+transposePitch :: Int -> Pitch -> Pitch
+transposePitch n (pc, oct) = pitch (absPitch (pc, oct) + n)
+
+extractMelody :: Music Pitch -> [(Pitch, Dur)]
+extractMelody m = case m of
+    Prim (Note d p) -> [(p, d)]
+    Prim (Rest d)   -> []
+    m1 :+: m2       -> extractMelody m1 ++ extractMelody m2
+    m1 :=: m2       -> merge (extractMelody m1) (extractMelody m2)
+    Modify _ m'     -> extractMelody m'
+    where
+        merge :: [(Pitch, Dur)] -> [(Pitch, Dur)] -> [(Pitch, Dur)]
+        merge xs [] = xs
+        merge [] ys = ys
+        merge ((p1, d1):xs) ((p2, d2):ys)
+            | d1 < d2   = (p1, d1) : merge xs ((p2, d2 - d1):ys)
+            | d1 > d2   = (p2, d2) : merge ((p1, d1 - d2):xs) ys
+            | otherwise = (p1, d1) : merge xs ys
+
+
 
 
 -- Takes a Pitch and plays a single note
