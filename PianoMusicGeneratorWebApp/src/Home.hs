@@ -79,11 +79,13 @@ generateMusic ts numMeasures pitch = do
     return (melodyLine :=: bassLine)
 
 generateBassLine :: TimeSignature -> Int -> Pitch -> IO (Music Pitch)
-generateBassLine (numBeats, beatValue) numMeasures pitch = do
+generateBassLine ts numMeasures pitch = do
+    progression <- randomProgression
     let scale = majorScale pitch
-    let progressionIndices = take numMeasures $ cycle [0, 3, 4, 0]  -- 1-4-5-1 progression
-    let progressionPitches = map (scale !!) progressionIndices
-    return $ line $ map (\p -> note wn p) progressionPitches
+    let progressionPitches = map (\degree -> scale !! degree) progression
+    let bassNotes = map (\p -> note wn p) progressionPitches
+    return $ line $ concatMap (replicate (numMeasures `div` length progression)) bassNotes
+
 
 
 
@@ -110,22 +112,35 @@ chooseDur = do
     return $ if isWholeNote then wn else hn
 
 
--- Generates a more structured and musical melody line
 generateSingleLine :: TimeSignature -> Int -> Pitch -> IO (Music Pitch)
-generateSingleLine (numBeats, beatValue) numMeasures pitch = do
+generateSingleLine ts@(numBeats, beatValue) numMeasures pitch = do
     let scale = majorScale pitch
-    phrases <- mapM (generateMelodyPhrase scale) [1..numMeasures]
+    phrases <- mapM (\m -> generateMelodyPhrase scale m ts) [1..numMeasures]
     return $ line $ concat phrases
 
-generateMelodyPhrase :: [Pitch] -> Int -> IO [Music Pitch]
-generateMelodyPhrase scale measureNumber = do
-    structure <- randomRIO (0 :: Int, 2 :: Int)  -- Type annotation added here
-    let baseNote = scale !! (measureNumber `mod` length scale)
-    let nextNote = scale !! ((measureNumber + 1) `mod` length scale)
-    return $ case structure of
-        0 -> [note qn baseNote, note en nextNote, rest en, note qn baseNote]
-        1 -> [note hn baseNote, note hn nextNote]
-        _ -> [rest sn, note qn baseNote, note qn nextNote]
+
+generateMelodyPhrase :: [Pitch] -> Int -> TimeSignature -> IO [Music Pitch]
+generateMelodyPhrase scale measureNumber (numBeats, beatValue) = do
+    let measureDuration = fromIntegral numBeats * beatValueToDuration beatValue
+    generatePhrase measureDuration scale
+
+generatePhrase :: Dur -> [Pitch] -> IO [Music Pitch]
+generatePhrase remainingDur scale = go remainingDur []
+  where
+    go dur acc
+      | dur <= 0 = return acc
+      | otherwise = do
+          pitch <- generateRandomPitch scale
+          noteDur <- chooseNoteDuration dur
+          let newNote = note noteDur pitch
+          go (dur - noteDur) (acc ++ [newNote])
+
+chooseNoteDuration :: Dur -> IO Dur
+chooseNoteDuration remainingDur = do
+    -- Randomly choose a duration that does not exceed the remaining duration of the measure
+    let possibleDurations = filter (<= remainingDur) [wn, hn, qn, en, sn]
+    idx <- randomRIO (0, length possibleDurations - 1)
+    return $ possibleDurations !! idx
 
 generateMeasureForLine :: Int -> Dur -> [Pitch] -> IO (Music Pitch)
 generateMeasureForLine numBeats dur scale = do
@@ -215,7 +230,8 @@ parseTimeSignature str = case map T.unpack . T.splitOn (T.pack "/") . T.pack $ s
 randomProgression :: IO [Int]
 randomProgression = do
     idx <- randomRIO (0, length progressions - 1)
-    return $ progressions !! idx
+    return (progressions !! idx)
+
 
 progressions :: [[Int]]
 progressions = [
