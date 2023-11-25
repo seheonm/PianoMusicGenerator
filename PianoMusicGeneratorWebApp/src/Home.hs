@@ -18,6 +18,7 @@ import Control.Concurrent (forkIO)
 import Control.Monad (replicateM)
 import System.Random (randomRIO, randomIO)
 
+-- I-IV-V-I , I-V-vi-IV, I-V-iV-I, I-vi-IV-V vi-IV-I-V, I-iii-IV-V, I-IV-ii-V
 
 -- Takes a beats per minute (bpm), a time signature, and a music piece
 playMusic :: Double -> TimeSignature -> Music Pitch -> IO ()
@@ -58,7 +59,7 @@ getGenerateMusicR = do
     -- Default values and parsing for time signature and bpm
     mbTimeSignature <- lookupGetParam "timeSignature"
     let timeSignature = fromMaybe (4,4) (mbTimeSignature >>= parseTimeSignature . T.unpack)
-        numMeasures = 2
+        numMeasures = 4
         keySignature = fromMaybe "C" (fmap T.unpack mbKeySignature)
         bpm = fromMaybe 120 (mbBpm >>= readMaybe . T.unpack)  -- Default to 120 if not present or invalid
     
@@ -73,59 +74,116 @@ getGenerateMusicR = do
 -- Generates a melody and a bass line, then combines them
 generateMusic :: TimeSignature -> Int -> Pitch -> IO (Music Pitch)
 generateMusic ts numMeasures pitch = do
-    melodyLine <- generateMelodyLine ts numMeasures pitch  -- Melody line
+    melodyLine <- generateSingleLine ts numMeasures pitch  -- Melody line
     bassLine <- generateBassLine ts numMeasures (lowerOctave pitch)  -- Bass line an octave lower
     return (melodyLine :=: bassLine)
 
 generateBassLine :: TimeSignature -> Int -> Pitch -> IO (Music Pitch)
-generateBassLine ts numMeasures tonic = do
-    let chords = chordProgression tonic
-    measures <- mapM (generateBaroqueMeasureForBass ts chords) [1..numMeasures]
-    return $ line measures
+generateBassLine ts numMeasures pitch = do
+    progression <- randomProgression
+    let scale = majorScale pitch
+    let progressionPitches = map (\degree -> scale !! degree) progression
+    return $ line $ concatMap (\p -> replicate (numMeasures `div` length progression) (note wn p)) progressionPitches
 
-generateBaroqueMeasureForBass :: TimeSignature -> [Chord] -> Int -> IO (Music Pitch)
-generateBaroqueMeasureForBass (numBeats, beatValue) chords measureNumber = do
-    let chord = chords !! ((measureNumber - 1) `mod` length chords)
-        maxMeasureDur = fromIntegral numBeats * beatValueToDuration beatValue
-    generateSingleMeasure maxMeasureDur chord
+generateMeasureForBass :: TimeSignature -> [Pitch] -> IO (Music Pitch)
+generateMeasureForBass (numBeats, beatValue) scale = do
+    let maxMeasureDur = fromIntegral numBeats * beatValueToDuration beatValue
+    generateSingleMeasure maxMeasureDur scale
 
-generateSingleMeasure :: Dur -> Chord -> IO (Music Pitch)
-generateSingleMeasure maxDur chord = go maxDur (rest 0)
+generateSingleMeasure :: Dur -> [Pitch] -> IO (Music Pitch)
+generateSingleMeasure maxDur scale = go maxDur (rest 0)
   where
     go remainingDur acc
       | remainingDur <= 0 = return acc
       | otherwise = do
-          pitch <- generateNoteFromChord chord
+          pitch <- generateRandomPitch scale
           dur <- chooseDur
           let actualDur = min dur remainingDur
           let newNote = note actualDur pitch
           go (remainingDur - actualDur) (acc :+: newNote)
-    
+
 chooseDur :: IO Dur
 chooseDur = do
     isWholeNote <- randomIO  -- Randomly decide whether to use a whole note
     return $ if isWholeNote then wn else hn
+    
+generateSingleLine :: TimeSignature -> Int -> Pitch -> IO (Music Pitch)
+generateSingleLine (numBeats, beatValue) numMeasures pitch = do
+    let dur = noteValueToDuration beatValue
+        scale = majorScale pitch  
+    generateMeasure <- replicateM numMeasures (generateMeasureForLine numBeats dur scale)
+    return $ line generateMeasure
+
+generateMeasureForLine :: Int -> Dur -> [Pitch] -> IO (Music Pitch)
+generateMeasureForLine numBeats dur scale = do
+    notes <- replicateM numBeats (generateRandomPitch scale >>= \p -> return $ note dur p)
+    return $ line notes
 
 generateRandomPitch :: [Pitch] -> IO Pitch
 generateRandomPitch scale = do
     index <- randomRIO (0, length scale - 1)
     return $ scale !! index
 
-beatValueToDuration :: Int -> Dur
-beatValueToDuration 1 = wn
-beatValueToDuration 2 = hn
-beatValueToDuration 4 = qn
-beatValueToDuration 8 = en
-beatValueToDuration _ = error "Unsupported beat value"
+noteValueToDuration :: Int -> Dur
+noteValueToDuration 1 = wn
+noteValueToDuration 2 = hn
+noteValueToDuration 4 = qn
+noteValueToDuration 8 = en
+noteValueToDuration 16 = sn
+noteValueToDuration _ = error "Unsupported note value"
 
--- Helper function to generate a major scale based on a given tonic
+beatValueToDuration :: Int -> Dur
+beatValueToDuration 1 = 1
+beatValueToDuration 2 = 1/2
+beatValueToDuration 4 = 1/4
+beatValueToDuration 8 = 1/8
+-- and so on for other values
+
 majorScale :: Pitch -> [Pitch]
-majorScale (p, o) = take 8 $ iterate nextPitch (p, o)
+majorScale startPitch = take 8 $ iterate nextPitch startPitch
   where
-    nextPitch (p, o) = case p of
-      B  -> (C, o + 1)
-      E  -> (F, o)
-      _  -> (succ p, o)
+    nextPitch :: Pitch -> Pitch
+    nextPitch (p, o) =
+      let
+        nextVal = pitchClassToVal p + interval (pitchClassToVal p)
+        nextP = valToPitchClass (nextVal `mod` 12)
+        nextO = if nextVal >= 12 then o + 1 else o
+      in (nextP, nextO)
+
+    pitchClassToVal :: PitchClass -> Int
+    pitchClassToVal C = 0
+    pitchClassToVal Cs = 1
+    pitchClassToVal D = 2
+    pitchClassToVal Ds = 3
+    pitchClassToVal E = 4
+    pitchClassToVal F = 5
+    pitchClassToVal Fs = 6
+    pitchClassToVal G = 7
+    pitchClassToVal Gs = 8
+    pitchClassToVal A = 9
+    pitchClassToVal As = 10
+    pitchClassToVal B = 11
+
+    valToPitchClass :: Int -> PitchClass
+    valToPitchClass 0 = C
+    valToPitchClass 1 = Cs
+    valToPitchClass 2 = D
+    valToPitchClass 3 = Ds
+    valToPitchClass 4 = E
+    valToPitchClass 5 = F
+    valToPitchClass 6 = Fs
+    valToPitchClass 7 = G
+    valToPitchClass 8 = Gs
+    valToPitchClass 9 = A
+    valToPitchClass 10 = As
+    valToPitchClass 11 = B
+
+    interval :: Int -> Int
+    interval val = majorScaleIntervals !! (val `mod` 7)
+
+    majorScaleIntervals :: [Int]
+    majorScaleIntervals = [2, 2, 1, 2, 2, 2, 1]
+
 
 -- Lower the pitch by one octave
 lowerOctave :: Pitch -> Pitch
@@ -141,104 +199,21 @@ parseTimeSignature str = case map T.unpack . T.splitOn (T.pack "/") . T.pack $ s
     [num, denom] -> Just (read num, read denom)
     _            -> Nothing
 
-type Chord = [Pitch]
+randomProgression :: IO [Int]
+randomProgression = do
+    idx <- randomRIO (0, length progressions - 1)
+    return $ progressions !! idx
 
-chordProgression :: Pitch -> [Chord]
-chordProgression tonic = [iChord, ivChord, vChord, iChord]
-  where
-    scale = majorScale tonic
-    iChord = take 3 scale  -- Tonic chord
-    ivChord = take 3 $ drop 3 scale  -- Subdominant chord
-    vChord = take 3 $ drop 4 scale  -- Dominant chord
-
-    
-generateNoteFromChord :: Chord -> IO Pitch
-generateNoteFromChord chord = do
-    index <- randomRIO (0, length chord - 1)
-    return $ chord !! index
-
-generateMelodyLine :: TimeSignature -> Int -> Pitch -> IO (Music Pitch)
-generateMelodyLine (numBeats, beatValue) numMeasures tonic = do
-    let chords = chordProgression tonic
-        melodyDur = beatValueToDuration beatValue  -- Duration of each beat
-    measures <- mapM (\measureNum -> generateMeasureForMelody (numBeats, melodyDur) (chords !! ((measureNum - 1) `mod` length chords))) [1..numMeasures]
-    return $ line measures
-
-generateMeasureForMelody :: (Int, Dur) -> Chord -> IO (Music Pitch)
-generateMeasureForMelody (numBeats, beatDur) chord = do
-    notes <- replicateM numBeats (generateNoteFromChordForMelody chord >>= \p -> return $ note beatDur p)
-    return $ line notes
-
-
-generateBaroqueMeasureForMelody :: TimeSignature -> [Chord] -> Int -> IO (Music Pitch)
-generateBaroqueMeasureForMelody (numBeats, _) chords measureNumber = do
-    let chord = chords !! ((measureNumber - 1) `mod` length chords)
-    pitches <- mapM (\_ -> generateNoteFromChordForMelody chord) [1..numBeats]
-    let notes = map (\p -> note en p) pitches  -- Convert each pitch to an eighth note
-    return $ line notes
-
-generateNoteFromChordForMelody :: Chord -> IO Pitch
-generateNoteFromChordForMelody chord = do
-    index <- randomRIO (0, length chord - 1)
-    return $ chord !! index
-
-
--- Generate counterpoint by harmonizing melody and bass
-generateCounterpoint :: Music Pitch -> IO (Music Pitch)
-generateCounterpoint melody = do
-    -- Extract pitches and durations from the melody
-    let (melodyPitches, melodyDurations) = unzip $ extractMelody melody
-    -- Generate bass pitches based on melody pitches
-    bassPitches <- mapM harmonizeWithMelody melodyPitches
-    -- Combine bass pitches with melody durations to create bass line
-    let bassLine = zipWith note melodyDurations bassPitches
-    return $ line bassLine
-
--- Function to harmonize bass note with melody note
-harmonizeWithMelody :: Pitch -> IO Pitch
-harmonizeWithMelody melodyPitch = do
-    interval <- randomRIO (1, 3) :: IO Int
-    let bassPitch = case interval of
-                      1 -> transposePitch (-12) melodyPitch  -- Octave below
-                      2 -> transposePitch (-7) melodyPitch   -- Perfect fifth below
-                      3 -> transposePitch (-3) melodyPitch   -- Minor third below
-    return bassPitch
-
--- Extended chord progression function
-extendedChordProgression :: Pitch -> [Chord]
-extendedChordProgression tonic = 
-    [iChord, iiChord, iiiChord, ivChord, vChord, viChord, viiDimChord, iChord]
-  where
-    scale = majorScale tonic
-    -- Basic chords
-    iChord = take 3 scale  -- Tonic chord
-    ivChord = take 3 $ drop 3 scale  -- Subdominant chord
-    vChord = take 3 $ drop 4 scale  -- Dominant chord
-
-    -- Extended chords
-    iiChord = take 3 $ drop 1 scale  -- Supertonic chord
-    iiiChord = take 3 $ drop 2 scale  -- Mediant chord
-    viChord = take 3 $ drop 5 scale  -- Submediant chord
-    viiDimChord = take 3 $ drop 6 scale  -- Leading tone chord, diminished
-
-transposePitch :: Int -> Pitch -> Pitch
-transposePitch n (pc, oct) = pitch (absPitch (pc, oct) + n)
-
-extractMelody :: Music Pitch -> [(Pitch, Dur)]
-extractMelody m = case m of
-    Prim (Note d p) -> [(p, d)]
-    Prim (Rest d)   -> []
-    m1 :+: m2       -> extractMelody m1 ++ extractMelody m2
-    m1 :=: m2       -> merge (extractMelody m1) (extractMelody m2)
-    Modify _ m'     -> extractMelody m'
-    where
-        merge :: [(Pitch, Dur)] -> [(Pitch, Dur)] -> [(Pitch, Dur)]
-        merge xs [] = xs
-        merge [] ys = ys
-        merge ((p1, d1):xs) ((p2, d2):ys)
-            | d1 < d2   = (p1, d1) : merge xs ((p2, d2 - d1):ys)
-            | d1 > d2   = (p2, d2) : merge ((p1, d1 - d2):xs) ys
-            | otherwise = (p1, d1) : merge xs ys
+progressions :: [[Int]]
+progressions = [
+    [0, 3, 4, 0],    -- I-IV-V-I
+    [0, 4, 5, 3],    -- I-V-vi-IV
+    [0, 4, 3, 0],    -- I-V-IV-I
+    [0, 5, 3, 4],    -- I-vi-IV-V
+    [5, 3, 0, 4],    -- vi-IV-I-V
+    [0, 2, 3, 4],    -- I-iii-IV-V
+    [0, 3, 1, 4]     -- I-IV-ii-V
+    ]
 
 
 
