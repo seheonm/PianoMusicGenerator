@@ -79,11 +79,13 @@ generateMusic ts numMeasures pitch = do
     return (melodyLine :=: bassLine)
 
 generateBassLine :: TimeSignature -> Int -> Pitch -> IO (Music Pitch)
-generateBassLine ts numMeasures pitch = do
-    progression <- randomProgression
+generateBassLine (numBeats, beatValue) numMeasures pitch = do
     let scale = majorScale pitch
-    let progressionPitches = map (\degree -> scale !! degree) progression
-    return $ line $ concatMap (\p -> replicate (numMeasures `div` length progression) (note wn p)) progressionPitches
+    let progressionIndices = take numMeasures $ cycle [0, 3, 4, 0]  -- 1-4-5-1 progression
+    let progressionPitches = map (scale !!) progressionIndices
+    return $ line $ map (\p -> note wn p) progressionPitches
+
+
 
 generateMeasureForBass :: TimeSignature -> [Pitch] -> IO (Music Pitch)
 generateMeasureForBass (numBeats, beatValue) scale = do
@@ -106,13 +108,24 @@ chooseDur :: IO Dur
 chooseDur = do
     isWholeNote <- randomIO  -- Randomly decide whether to use a whole note
     return $ if isWholeNote then wn else hn
-    
+
+
+-- Generates a more structured and musical melody line
 generateSingleLine :: TimeSignature -> Int -> Pitch -> IO (Music Pitch)
 generateSingleLine (numBeats, beatValue) numMeasures pitch = do
-    let dur = noteValueToDuration beatValue
-        scale = majorScale pitch  
-    generateMeasure <- replicateM numMeasures (generateMeasureForLine numBeats dur scale)
-    return $ line generateMeasure
+    let scale = majorScale pitch
+    phrases <- mapM (generateMelodyPhrase scale) [1..numMeasures]
+    return $ line $ concat phrases
+
+generateMelodyPhrase :: [Pitch] -> Int -> IO [Music Pitch]
+generateMelodyPhrase scale measureNumber = do
+    structure <- randomRIO (0 :: Int, 2 :: Int)  -- Type annotation added here
+    let baseNote = scale !! (measureNumber `mod` length scale)
+    let nextNote = scale !! ((measureNumber + 1) `mod` length scale)
+    return $ case structure of
+        0 -> [note qn baseNote, note en nextNote, rest en, note qn baseNote]
+        1 -> [note hn baseNote, note hn nextNote]
+        _ -> [rest sn, note qn baseNote, note qn nextNote]
 
 generateMeasureForLine :: Int -> Dur -> [Pitch] -> IO (Music Pitch)
 generateMeasureForLine numBeats dur scale = do
