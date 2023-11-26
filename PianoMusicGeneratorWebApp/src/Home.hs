@@ -58,13 +58,15 @@ playMusicWithTempo bpm timeSignature m = play $ tempo (toRational (bpm / 120)) m
 
 -- Function to generate a bass line for a given time signature, number of measures, and pitch
 generateBassLine :: TimeSignature -> Int -> Pitch -> IO (Music Pitch)
-generateBassLine ts numMeasures pitch = do
+generateBassLine (numBeats, beatType) numMeasures pitch = do
     progression <- randomProgression
     let scale = majorScale pitch
     let progressionPitches = map (\degree -> scale !! degree) progression
-    let bassNotes = map (\p -> note wn p) progressionPitches
+    let duration = wn * fromIntegral numBeats / fromIntegral beatType
+    let bassNotes = map (\p -> note duration p) progressionPitches
     let fullProgression = take numMeasures . cycle $ bassNotes
     return $ line fullProgression
+
 
 -- Lower the pitch by one octave
 lowerOctave :: Pitch -> Pitch
