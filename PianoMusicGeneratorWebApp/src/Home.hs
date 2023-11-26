@@ -59,7 +59,7 @@ getGenerateMusicR = do
     -- Default values and parsing for time signature and bpm
     mbTimeSignature <- lookupGetParam "timeSignature"
     let timeSignature = fromMaybe (4,4) (mbTimeSignature >>= parseTimeSignature . T.unpack)
-        numMeasures = 4
+        numMeasures = 8 -- this is behaving weird, the bass doesnt cycle the chord progression
         keySignature = fromMaybe "C" (fmap T.unpack mbKeySignature)
         bpm = fromMaybe 120 (mbBpm >>= readMaybe . T.unpack)  -- Default to 120 if not present or invalid
     
@@ -84,10 +84,8 @@ generateBassLine ts numMeasures pitch = do
     let scale = majorScale pitch
     let progressionPitches = map (\degree -> scale !! degree) progression
     let bassNotes = map (\p -> note wn p) progressionPitches
-    return $ line $ concatMap (replicate (numMeasures `div` length progression)) bassNotes
-
-
-
+    let fullProgression = take numMeasures . cycle $ bassNotes
+    return $ line fullProgression
 
 generateMeasureForBass :: TimeSignature -> [Pitch] -> IO (Music Pitch)
 generateMeasureForBass (numBeats, beatValue) scale = do
