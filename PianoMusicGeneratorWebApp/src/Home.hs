@@ -18,12 +18,9 @@ import Control.Concurrent (forkIO)
 import Control.Monad (replicateM)
 import System.Random (randomRIO, randomIO)
 
--- I-IV-V-I , I-V-vi-IV, I-V-iV-I, I-vi-IV-V vi-IV-I-V, I-iii-IV-V, I-IV-ii-V
-
 -- Takes a beats per minute (bpm), a time signature, and a music piece
 playMusic :: Double -> TimeSignature -> Music Pitch -> IO ()
 playMusic bpm timeSignature m = play $ tempo (toRational (bpm / 120)) m
-
 
 -- Maps a musical key signature represented as a string to a corresponding Pitch. This includes the notes and octaves
 -- If the key signature is not recognized, it returns Nothing
@@ -41,12 +38,6 @@ keySignatureToPitch "Eb" = Just (Ds, 4)
 keySignatureToPitch "Bb" = Just (As, 4)
 keySignatureToPitch "F" = Just (F, 4)
 keySignatureToPitch _ = Nothing
-
-
--- Converts a note value into a corresponding duration (whole note, half note)
--- Throws an error if an unsupported note value is provided
-
-
 
 -- Web handler that generates and plays music based on parameters received in a GET request
 -- These parameters include key signatue, bpm, and time signature
@@ -87,35 +78,11 @@ generateBassLine ts numMeasures pitch = do
     let fullProgression = take numMeasures . cycle $ bassNotes
     return $ line fullProgression
 
-generateMeasureForBass :: TimeSignature -> [Pitch] -> IO (Music Pitch)
-generateMeasureForBass (numBeats, beatValue) scale = do
-    let maxMeasureDur = fromIntegral numBeats * beatValueToDuration beatValue
-    generateSingleMeasure maxMeasureDur scale
-
-generateSingleMeasure :: Dur -> [Pitch] -> IO (Music Pitch)
-generateSingleMeasure maxDur scale = go maxDur (rest 0)
-  where
-    go remainingDur acc
-      | remainingDur <= 0 = return acc
-      | otherwise = do
-          pitch <- generateRandomPitch scale
-          dur <- chooseDur
-          let actualDur = min dur remainingDur
-          let newNote = note actualDur pitch
-          go (remainingDur - actualDur) (acc :+: newNote)
-
-chooseDur :: IO Dur
-chooseDur = do
-    isWholeNote <- randomIO  -- Randomly decide whether to use a whole note
-    return $ if isWholeNote then wn else hn
-
-
 generateSingleLine :: TimeSignature -> Int -> Pitch -> IO (Music Pitch)
 generateSingleLine ts@(numBeats, beatValue) numMeasures pitch = do
     let scale = majorScale pitch
     phrases <- mapM (\m -> generateMelodyPhrase scale m ts) [1..numMeasures]
     return $ line $ concat phrases
-
 
 generateMelodyPhrase :: [Pitch] -> Int -> TimeSignature -> IO [Music Pitch]
 generateMelodyPhrase scale measureNumber (numBeats, beatValue) = do
@@ -135,35 +102,20 @@ generatePhrase remainingDur scale = go remainingDur []
 
 chooseNoteDuration :: Dur -> IO Dur
 chooseNoteDuration remainingDur = do
-    -- Randomly choose a duration that does not exceed the remaining duration of the measure
     let possibleDurations = filter (<= remainingDur) [wn, hn, qn, en, sn]
     idx <- randomRIO (0, length possibleDurations - 1)
     return $ possibleDurations !! idx
-
-generateMeasureForLine :: Int -> Dur -> [Pitch] -> IO (Music Pitch)
-generateMeasureForLine numBeats dur scale = do
-    notes <- replicateM numBeats (generateRandomPitch scale >>= \p -> return $ note dur p)
-    return $ line notes
 
 generateRandomPitch :: [Pitch] -> IO Pitch
 generateRandomPitch scale = do
     index <- randomRIO (0, length scale - 1)
     return $ scale !! index
 
-noteValueToDuration :: Int -> Dur
-noteValueToDuration 1 = wn
-noteValueToDuration 2 = hn
-noteValueToDuration 4 = qn
-noteValueToDuration 8 = en
-noteValueToDuration 16 = sn
-noteValueToDuration _ = error "Unsupported note value"
-
 beatValueToDuration :: Int -> Dur
 beatValueToDuration 1 = 1
 beatValueToDuration 2 = 1/2
 beatValueToDuration 4 = 1/4
 beatValueToDuration 8 = 1/8
--- and so on for other values
 
 majorScale :: Pitch -> [Pitch]
 majorScale startPitch = take 8 $ iterate nextPitch startPitch
@@ -210,7 +162,6 @@ majorScale startPitch = take 8 $ iterate nextPitch startPitch
     majorScaleIntervals :: [Int]
     majorScaleIntervals = [2, 2, 1, 2, 2, 2, 1]
 
-
 -- Lower the pitch by one octave
 lowerOctave :: Pitch -> Pitch
 lowerOctave p = pitch (absPitch p - 12)
@@ -230,7 +181,6 @@ randomProgression = do
     idx <- randomRIO (0, length progressions - 1)
     return (progressions !! idx)
 
-
 progressions :: [[Int]]
 progressions = [
     [0, 3, 4, 0],    -- I-IV-V-I
@@ -242,8 +192,7 @@ progressions = [
     [0, 3, 1, 4]     -- I-IV-ii-V
     ]
 
-
-
+------------------------------------------------------------------------------------------
 
 -- Takes a Pitch and plays a single note
 playNote :: Pitch -> IO ()
