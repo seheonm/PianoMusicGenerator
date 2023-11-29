@@ -23,7 +23,7 @@ type TimeSignature = (Int, Int)
 
 
 -- Web handler that generates and plays music based on parameters received in a GET request
--- These parameters include key signatue, bpm, and time signature
+-- These parameters include key signatue, bpm (beats per minute), and time signature
 getGenerateMusicR :: Handler Html
 getGenerateMusicR = do
     -- Retrieving parameters from the GET request
@@ -33,7 +33,7 @@ getGenerateMusicR = do
     -- Default values and parsing for time signature and bpm
     mbTimeSignature <- lookupGetParam "timeSignature"
     let timeSignature = fromMaybe (4,4) (mbTimeSignature >>= parseTimeSignature . T.unpack)
-        numMeasures = 8 -- this is behaving weird, the bass doesnt cycle the chord progression
+        numMeasures = 8 
         keySignature = fromMaybe "C" (fmap T.unpack mbKeySignature)
         bpm = fromMaybe 120 (mbBpm >>= readMaybe . T.unpack)  -- Default to 120 if not present or invalid
     
@@ -59,12 +59,21 @@ playMusicWithTempo bpm timeSignature m = play $ tempo (toRational (bpm / 120)) m
 -- Function to generate a bass line for a given time signature, number of measures, and pitch
 generateBassLine :: TimeSignature -> Int -> Pitch -> IO (Music Pitch)
 generateBassLine (numBeats, beatType) numMeasures pitch = do
+     -- Generates a random chord progression from a predefined set
     progression <- randomProgression
+    -- Constructs a major scale starting from the given pitch
     let scale = majorScale pitch
+    -- Maps each degree of the chord progression to a corresponding pitch in the scale
     let progressionPitches = map (\degree -> scale !! degree) progression
-    let duration = wn * fromIntegral numBeats / fromIntegral beatType
+    -- Calculates the duration of each bass note based on the time signature
+    -- Here, wn represents a whole note, and the duration is adjusted according to the time signature
+    let duration = wn * fromIntegral numBeats / fromIntegral beatType 
+    -- Creates a series of bass notes with the calculated duration for each pitch in the progression
     let bassNotes = map (\p -> note duration p) progressionPitches
+    -- Repeats the chord progression to fit the specified number of measures
+    -- This creates a continuous bass line throughout the piece
     let fullProgression = take numMeasures . cycle $ bassNotes
+    -- Combines the notes into a single linear musical piece
     return $ line fullProgression
 
 
@@ -93,8 +102,12 @@ progressions = [
 -- Function to generate a single melody line for given time signature, number of measures, and pitch
 generateMelodyLine :: TimeSignature -> Int -> Pitch -> IO (Music Pitch)
 generateMelodyLine ts@(numBeats, beatValue) numMeasures pitch = do
+    -- Constructs a major scale starting from the given pitch
     let scale = majorScale pitch
+    -- Iteratively generates a melody phrase for each measure
+    -- This involves creating a unique melody sequence for each measure
     phrases <- mapM (\m -> generateMelodyPhrase scale m ts) [1..numMeasures]
+    -- Concatenates all the individual measure phrases into a single melody line
     return $ line $ concat phrases
 
 -- Function to generate a melody phrase based on a scale, measure number, and time signature

@@ -1,0 +1,14 @@
+Euterpea is a library for music composition and analysis in Haskell. It provides a framework for creating, 
+manipulating, and analyzing music in a functional programming context. Euterpea's key features are:
+
+Music Representation: Euterpea defines a Music data type, which is a versatile representation of music. 
+This type can express notes, rests, chords, sequences of musical pieces, and more. It allows for the 
+creation of complex musical compositions programmatically.
+
+Note and Pitch Representation: In Euterpea, notes are represented with pitches (like C, D, E, etc.) 
+and durations (whole note, half note, etc.). This abstraction makes it easy to construct melodies and harmonies.
+
+MIDI Integration: Euterpea can interface with MIDI (Musical Instrument Digital Interface), allowing 
+music composed in Haskell to be played back through MIDI-enabled devices or software synthesizers. 
+This is crucial for turning code into audible music.
+
