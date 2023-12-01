@@ -8,6 +8,7 @@ This repository contains a minimal web application built using the Yesod web fra
 
 ## Website 
 Enjoy playing on the piano and generating music!
+A piano is generated that you can play as well as a music generator where you can pick the time signature, beats per minute, and key signature.
 
 ## Prerequisites
 - Haskell Stack
@@ -53,3 +54,6 @@ To modify the main handler, check out src/Handler/Home.hs. This is where the res
    ```
    stack run
    ```
+
+## Possible bugs
+- The yesod uses a library called warp that by default handles the threading by detecting how many cores your machine has and setting that number to the number of threads it uses. Getting a net::ERR_CONNECTION_REFUSED error means that the local server on some machines cannot handle the amount of server requests they are getting. This is a hardware error that we can’t solve at this point.
